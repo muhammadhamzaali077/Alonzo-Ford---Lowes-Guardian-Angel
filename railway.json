@@ -1,0 +1,36 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm run build"
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "healthcheckPath": "/healthz",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "cron": [
+    {
+      "name": "poll-and-flag",
+      "schedule": "0 * * * *",
+      "command": "node dist/jobs/poll-and-flag.js"
+    },
+    {
+      "name": "classifier-retry",
+      "schedule": "*/15 * * * *",
+      "command": "node dist/jobs/classifier-retry.js"
+    },
+    {
+      "name": "ingestion-gap-check",
+      "schedule": "30 11 * * 1",
+      "command": "node dist/jobs/ingestion-gap-check.js"
+    },
+    {
+      "name": "weekly-digest",
+      "schedule": "0 12 * * 1",
+      "command": "node dist/jobs/weekly-digest.js"
+    }
+  ]
+}

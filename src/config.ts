@@ -1,0 +1,71 @@
+import { z } from 'zod';
+
+const EnvSchema = z.object({
+  DATABASE_PATH: z.string().default('./dev.db'),
+  OPENROUTER_API_KEY: z.string().min(1, 'OPENROUTER_API_KEY is required. Get one at https://openrouter.ai/keys.'),
+  OPENROUTER_MODEL: z.string().default('google/gemini-flash-lite-2.0'),
+  BETTER_AUTH_SECRET: z.string().optional(),
+  APP_URL: z.string().url().default('http://localhost:3000'),
+  PROTOTYPE_MODE: z
+    .string()
+    .default('true')
+    .transform((v) => v.toLowerCase() === 'true'),
+  DEMO_LOGIN_EMAIL: z.string().email().default('demo@lowesguardianangel.com'),
+  DEMO_LOGIN_PASSWORD: z.string().default('demo'),
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+  PORT: z
+    .string()
+    .default('3000')
+    .transform((v) => Number.parseInt(v, 10)),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  THERAP_SFTP_HOST: z.string().optional(),
+  THERAP_SFTP_USER: z.string().optional(),
+  THERAP_SFTP_PRIVATE_KEY_PATH: z.string().optional(),
+  EMAIL_API_KEY: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+});
+
+export type Config = z.infer<typeof EnvSchema>;
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  const parsed = EnvSchema.parse(env);
+  assertDemoPasswordSafety(parsed);
+  return parsed;
+}
+
+function assertDemoPasswordSafety(cfg: Config): void {
+  const isLocalhost =
+    cfg.APP_URL.startsWith('http://localhost') || cfg.APP_URL.startsWith('http://127.0.0.1');
+  if (!isLocalhost && cfg.DEMO_LOGIN_PASSWORD === 'demo') {
+    throw new Error(
+      'Refusing to boot: DEMO_LOGIN_PASSWORD is still the default "demo" but APP_URL ' +
+        `("${cfg.APP_URL}") points to a non-local host. Seeded PHI-shaped synthetic data ` +
+        'lives behind the demo login — set a strong DEMO_LOGIN_PASSWORD env var before deploying.',
+    );
+  }
+}
+
+let cached: Config | undefined;
+export function getConfig(): Config {
+  if (!cached) cached = loadConfig();
+  return cached;
+}
+
+// Convenience proxy so `config.X` continues to read as a plain object at call sites.
+// Resolves lazily on first property access — does NOT run at module load, so tests
+// can import { loadConfig } without tripping required-env validation.
+export const config: Config = new Proxy({} as Config, {
+  get(_t, p) {
+    return getConfig()[p as keyof Config];
+  },
+  has(_t, p) {
+    return p in getConfig();
+  },
+  ownKeys() {
+    return Reflect.ownKeys(getConfig() as object);
+  },
+  getOwnPropertyDescriptor(_t, p) {
+    return Object.getOwnPropertyDescriptor(getConfig(), p);
+  },
+});

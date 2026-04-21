@@ -1,0 +1,43 @@
+{
+  "name": "guardian-angel-compliance-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Compliance dashboard for Lowe's Guardian Angel — red/yellow/green on Therap T-Logs.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "build": "tsc --project tsconfig.json && node -e \"require('node:fs').mkdirSync('dist/db',{recursive:true});require('node:fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\"",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "seed": "node --env-file-if-exists=.env --import tsx src/jobs/seed.ts",
+    "job:digest": "node --env-file-if-exists=.env --import tsx src/jobs/weekly-digest.ts",
+    "job:retry": "node --env-file-if-exists=.env --import tsx src/jobs/classifier-retry.ts",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "better-auth": "^1.1.0",
+    "better-sqlite3": "^12.0.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "hono": "^4.6.10",
+    "p-limit": "^6.1.0",
+    "pino": "^9.5.0",
+    "resend": "^4.0.1",
+    "ssh2-sftp-client": "^11.0.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.9.0",
+    "@types/ssh2-sftp-client": "^9.0.4",
+    "happy-dom": "^15.10.2",
+    "pino-pretty": "^11.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

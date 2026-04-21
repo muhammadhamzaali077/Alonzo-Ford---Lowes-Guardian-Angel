@@ -1,0 +1,93 @@
+// Upload view. Phase 9 also adds the full org + recipients + ops Settings
+// surface in src/views/admin-org.ts.
+
+import type { UploadResult } from '../admin/upload.js';
+import { escapeHtml } from './layout.js';
+import { renderSettingsShell } from './admin-org.js';
+
+export function renderUploadPage(result?: UploadResult): string {
+  const body = `<h2 class="text-lg font-medium text-gray-900">Upload Therap export</h2>
+  <p class="mt-1 text-sm text-gray-600">Upload an Excel or CSV T-Log export from Therap. Each row becomes a note in Guardian Angel.</p>
+
+  <form method="post" action="/admin/upload" enctype="multipart/form-data" class="mt-6">
+    <label for="upload-file" class="block border-2 border-dashed border-gray-300 rounded-md p-8 text-center cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-600">
+      <svg class="mx-auto w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v12"/>
+      </svg>
+      <p class="mt-3 text-sm font-medium text-gray-900">Drop a Therap Excel export here, or click to browse</p>
+      <p class="mt-1 text-xs text-gray-500">Max file size 10 MB. Supports .xlsx and .csv.</p>
+      <input id="upload-file" name="file" type="file" accept=".xlsx,.csv,.xls,.xlsm,.xlsb" required class="sr-only"
+             onchange="this.form.querySelector('[data-upload-filename]').textContent = this.files[0]?.name || ''">
+    </label>
+    <p data-upload-filename class="mt-2 text-xs text-gray-600 tnum"></p>
+    <div class="mt-4 flex gap-2">
+      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+        Upload
+      </button>
+    </div>
+  </form>
+
+  ${result ? renderUploadSummary(result) : renderEmptyHint()}`;
+  return renderSettingsShell('upload', body);
+}
+
+function renderEmptyHint(): string {
+  return `<p class="mt-8 text-sm text-gray-500">Upload results will appear below after you pick a file.</p>`;
+}
+
+export function renderUploadSummary(r: UploadResult): string {
+  if (r.fatal_error) {
+    return `<div class="mt-6 bg-white border border-red-200 rounded-md p-5">
+  <h2 class="text-lg font-medium text-gray-900">We couldn't process this file</h2>
+  <p class="mt-2 text-sm text-gray-700">${escapeHtml(r.fatal_error)}</p>
+</div>`;
+  }
+
+  const partsIn: string[] = [];
+  if (r.ingested > 0) partsIn.push(`${r.ingested} added`);
+  if (r.superseded > 0) partsIn.push(`${r.superseded} updated`);
+  if (r.noop > 0) partsIn.push(`${r.noop} unchanged`);
+  if (r.skipped.length > 0) partsIn.push(`${r.skipped.length} skipped`);
+  const ingestSentence = `Parsed ${r.parsed} row${r.parsed === 1 ? '' : 's'}. ${partsIn.length > 0 ? partsIn.join(', ') + '.' : 'Nothing to do.'}`;
+
+  const flagsSentence = renderFlagsSentence(r);
+
+  const skippedDetails =
+    r.skipped.length === 0
+      ? ''
+      : `<details class="mt-4" open>
+  <summary class="cursor-pointer text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded inline-block py-1 -my-1">Skipped rows (${r.skipped.length})</summary>
+  <ul class="mt-2 divide-y divide-gray-100 text-sm text-gray-700 border-t border-gray-200">
+    ${r.skipped
+      .slice(0, 200)
+      .map(
+        (s) => `<li class="py-2">
+      <span class="font-medium tnum">Row ${s.row}:</span> ${escapeHtml(s.reason)}
+    </li>`,
+      )
+      .join('')}
+    ${r.skipped.length > 200 ? `<li class="py-2 text-xs text-gray-500">… and ${r.skipped.length - 200} more.</li>` : ''}
+  </ul>
+</details>`;
+
+  return `<div class="mt-6 bg-white border border-gray-200 rounded-md p-5">
+  <h2 class="text-lg font-medium text-gray-900">Upload summary</h2>
+  <p class="mt-1 text-sm text-gray-600">File: <span class="font-medium text-gray-900">${escapeHtml(r.filename)}</span></p>
+  <p class="mt-3 text-sm text-gray-900">${escapeHtml(ingestSentence)}</p>
+  ${flagsSentence}
+  ${skippedDetails}
+  <div class="mt-4 pt-4 border-t border-gray-200 flex items-center gap-4">
+    <a href="/" class="text-sm text-blue-600 hover:underline">Back to dashboard →</a>
+    <a href="/admin/upload" class="text-sm text-gray-700 hover:text-blue-600">Upload another file</a>
+  </div>
+</div>`;
+}
+
+function renderFlagsSentence(r: UploadResult): string {
+  const parts: string[] = [];
+  if (r.new_flags.red > 0)     parts.push(`${r.new_flags.red} new red`);
+  if (r.new_flags.yellow > 0)  parts.push(`${r.new_flags.yellow} new yellow`);
+  if (r.new_flags.missing > 0) parts.push(`${r.new_flags.missing} new missing-note`);
+  if (parts.length === 0) return '';
+  return `<p class="mt-1 text-sm text-gray-600">Flags from this upload: ${parts.join(', ')}.</p>`;
+}
