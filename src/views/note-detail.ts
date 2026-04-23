@@ -87,10 +87,15 @@ function renderFlagCard(flag: NoteFlagRow, feedback?: FlagFeedbackState): string
   const pill = severityPill(flag.severity === 'red' ? 'red' : 'yellow');
   const label = displayCategoryLabel(flag.display_category as DisplayCategory);
   const ruleLabel = flag.rule_name ? `${flag.rule_name}${flag.rule_version ? ' · version ' + flag.rule_version : ''}` : ruleLabelFromSource(flag.source);
+  // Batch 2: severity-accent bar on each flag card (red or amber) so a
+  // user scanning a note with multiple flags can tell which is red vs
+  // yellow without reading the pill label. Consistent with the home-
+  // page log-stream treatment.
+  const sevClass = flag.severity === 'red' ? 'ga-cream-row-red' : 'ga-cream-row-amber';
 
   const audit = renderAuditDisclosure(flag);
 
-  return `<div class="ga-surface-cream p-4 sm:p-5">
+  return `<div class="ga-surface-cream ${sevClass} p-4 sm:p-5">
   <div class="flex items-center gap-2 flex-wrap">
     ${pill}
     <span class="text-xs font-medium ga-text">${escapeHtml(label)}</span>

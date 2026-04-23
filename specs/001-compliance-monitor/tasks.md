@@ -594,15 +594,25 @@ At 25 rows per page, the per-row severity pill repeats 25 times on screen, consu
 
 - [X] T150 **Batch 1.6 verification pass** — screenshot capture at desktop + 375px for login + dashboard (home page with new stream + revised locations list) + rules. DOM audit: no location-type string on home page; stream has 25 rows; `hx-trigger="every 30s"` present; `hx-get="/stream/more?offset=25"` on the "Show more" button. Typecheck + full test suite clean. Budget screenshot review as the client review gate before Batch 2 kicks. **DoD**: screenshots saved under `C:/Users/DELL/AppData/Local/Temp/ga-shots-batch1-6/`; all AC rows from REQs 2/4/10/11 above green-ticked in a report back to the client. **Satisfies**: all Batch 1.6 REQ AC rows. **Deps**: T145, T146, T147, T148, T149. **Est**: 20 min.
 
-### Batch 2 — home-page log-stream hero placement (planned)
+### Batch 2 — rules editor simplification + drill-down polish + note detail severity bar (landed)
 
-**Scope**: Restructure the home page so the log stream (now built in Batch 1.6) is the primary scroll surface. Aggregate tiles and trend chart move below or beside the stream per REQ-2 (AC-2.1). This was originally the entire scope of Batch 2; many of its acceptance criteria are now covered by Batch 1.6 — Batch 2 narrows to layout/placement only.
+**Scope (post-Batch-1.6 reframe)**: Batch 1.6 already shipped the home-page hero placement that was originally Batch 2's job, so Batch 2 narrowed to: simplify the rule editor to "slider + preview + Save" (REQ-6 follow-through), apply log-row-style severity bars to drill-down + note-detail rows for consistency with the home stream, and verify the version-history DB writes still happen even though the UI is gone.
 
-- [ ] T#B2 Home page restructure (placement-only after Batch 1.6). Detailed task breakdown pending Batch 1.6 landing.
+- [X] T151 **Rules editor simplification.** Removed Advanced Instructions disclosure + prompt_template input. Merged "Save changes" / "Save & update flags now" into single "Save" button (intent=save_and_rerun) with helper text "Applies the change and re-checks recent notes." Updated impact-preview copy to reference "Save" instead of "Save & update flags now." Saved-banner becomes a fallback for the rare no-rerun path (silent revert, older bookmarked ?saved= link). **Files**: `src/views/rules.ts`. **Satisfies**: REQ-6 simplification follow-through. **DoD**: DOM audit on `/rules/copy_paste/edit` shows zero "Advanced: instructions" strings, zero `name="prompt_template"` inputs, exactly one Save button.
+
+- [X] T152 **Drill-down list row severity bars.** Added `.ga-cream-row-{red,amber,green}` token utility (4px left accent bar; no background tint — rgba red over cream reads like a water stain). Applied to flagged-notes list in individual view (red/amber per `f.severity`) and to missing-notes list in location view (always red). **Files**: `src/views/design-tokens-css.ts`, `src/views/drilldown.ts`. **DoD**: each row visibly carries severity bar; mixed-severity individual view shows distinguishable red vs amber bars.
+
+- [X] T153 **Note-detail flag card severity bar.** Each flag card on `/note/:id/:v` gets `.ga-cream-row-red` or `.ga-cream-row-amber` based on `flag.severity` so multiple flags on one note are scannable at-a-glance. **Files**: `src/views/note-detail.ts`. **DoD**: flag card has visible 4px colored left bar; cream surface text still readable (no background-tint conflict).
+
+- [X] T154 **DB version-write verification.** Saved a rule via `POST /rules/copy_paste` with intent=save_and_rerun and confirmed `rule_config` row count for that key incremented by 1. Pre-save state: 2 versions, max=2. Post-save: 3 versions, max=3. UI removal in Batch 1.5 + simplification here did NOT touch `editRule()`'s transaction in `src/rules/rules-admin.ts`.
+
+- [X] T155 **Route handler decision documented.** Added explicit `// Intentionally reachable by direct URL` comments above `GET /rules/:rule_key/history` and `POST /rules/:rule_key/revert` in `src/server.ts`. Kept routes live (data path preserved, asymmetric-cost reasoning: re-registering routes later if we want UI back is more work than just leaving them silent now). If preference flips to 404, change is one-line per route.
+
+- [X] T156 **Batch 2 verification pass.** Screenshots saved to `C:/Users/DELL/AppData/Local/Temp/ga-shots-batch2/` for location / angel / individual drill-down + note detail + rule editor (copy_paste + short_note) + rules list at desktop (1440x900) + 375px mobile. Curl audit confirms all DoD items above. Typecheck clean, 139/139 tests pass.
 
 ### Batch 3 — drilldown + note + rules polish (planned)
 
-- [ ] T#B3 Sweep remaining `bg-white` / `border-gray-*` / `text-blue-*` hardcodes from drill-down + note-detail + rules. Inventory from Batch 1 report + whatever's still standing after Batches 1.5/1.6.
+- [ ] T#B3 Sweep remaining `bg-white` / `border-gray-*` / `text-blue-*` hardcodes from drill-down + note-detail + rules. Inventory from Batch 1 report + whatever's still standing after Batches 1.5/1.6/2.
 
 ### Batch 4 — digest + admin + login (planned)
 

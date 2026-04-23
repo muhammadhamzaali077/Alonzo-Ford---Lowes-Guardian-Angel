@@ -886,6 +886,11 @@ app.post('/rules/:rule_key', async (c) => {
   return c.redirect(`/rules/${encodeURIComponent(ruleKey)}/edit?saved=${updated.version}`, 303);
 });
 
+// Intentionally reachable by direct URL — the UI entry point to this
+// route was removed in Batch 1.5 per REQ-6, but the data path is kept
+// live so version history can be inspected (or an admin-only UI brought
+// back) without a migration. If you want to 404 this route instead,
+// flip it to `renderNotFoundPage` below; the underlying DB data stays.
 app.get('/rules/:rule_key/history', (c) => {
   const scope = mustGetScope(c);
   if (!canEditRules(scope)) {
@@ -905,6 +910,10 @@ app.get('/rules/:rule_key/history', (c) => {
   );
 });
 
+// Intentionally reachable by direct URL + form POST — see note on
+// GET /rules/:rule_key/history above. The UI "Restore this version"
+// button is only reachable if a user navigates to /rules/:key/history
+// directly, since Batch 1.5 removed the in-UI link to that page.
 app.post('/rules/:rule_key/revert', async (c) => {
   const scope = mustGetScope(c);
   if (!canEditRules(scope)) {

@@ -1,9 +1,15 @@
 // Rules-config screen views.
-// Per UI/UX constraints:
+// Per UI/UX constraints + Batch 2 simplification:
 //   - "Rules" in nav (never "Rules config")
 //   - Numeric thresholds with plain-English labels
-//   - Prompt textarea behind "Advanced: instructions for the system" disclosure
-//   - Buttons: "Save changes", "Update flags now", "Restore this version"
+//   - ONE primary action: "Save" — saves and re-runs flags atomically.
+//     Batch 2 retired the prior two-button "Save changes" / "Save &
+//     update flags now" pattern; a non-technical CEO expects clicking
+//     Save to apply the change, not stage it.
+//   - Advanced Instructions (prompt_template) disclosure removed from
+//     UI per REQ-6 simplification. Data is still seeded in rule_config
+//     and still drives the classifier — only the edit surface is gone.
+//     Server-side POST handler still accepts prompt_template if sent.
 
 import type { Rule } from '../rules/rules-admin.js';
 import type { ImpactPreview } from '../db/queries/rule-impact.js';
@@ -64,6 +70,13 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
     { label: rule.name },
   ]);
 
+  // The prior renderSavedBanner is retired — every Save now goes through
+  // the save_and_rerun path, which produces a rerunResult. The rerun
+  // result already says "Flags updated. N prior flags cleared..." so a
+  // separate "Saved as vN" banner was redundant. If someone lands here
+  // with ?saved=N but no rerunResult (e.g., older bookmarked link or a
+  // silent revert), we still want the "Saved as vN" confirmation, so
+  // the banner is conditional on rerunResult being absent.
   return `<section class="max-w-3xl">
   ${crumb}
   <div class="mt-2">
@@ -71,7 +84,7 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
     <p class="mt-1 text-sm ga-text">Version ${rule.version}${rule.created_by ? ' · edited by ' + escapeHtml(rule.created_by) : ''}</p>
   </div>
 
-  ${savedVersion ? renderSavedBanner(savedVersion) : ''}
+  ${savedVersion && !rerunResult ? renderSavedBanner(savedVersion) : ''}
   ${rerunResult ? renderRerunResult(rerunResult) : ''}
 
   <form method="post" action="/rules/${encodeURIComponent(rule.rule_key)}" class="mt-6 space-y-6">
@@ -93,26 +106,12 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
 
     ${renderImpactPreview(rule.rule_key, impact)}
 
-    <details class="rounded-md" style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border);">
-      <summary class="cursor-pointer select-none px-4 py-3 text-sm font-medium ga-text-strong ga-focus rounded-md">
-        Advanced: instructions for the system
-      </summary>
-      <div class="px-4 pb-4 pt-3" style="border-top: 1px solid var(--ga-border);">
-        <p class="text-xs ga-text-muted">These are the detailed instructions the system uses to decide borderline cases. Most people never need to change this.</p>
-        <textarea name="prompt_template" rows="8"
-                  class="mt-2 ga-input" style="font-size: var(--ga-size-caption);"
-                  aria-label="Advanced instructions">${escapeHtml(rule.prompt_template)}</textarea>
-      </div>
-    </details>
-
-    <div class="flex items-center gap-3 pt-4 flex-wrap" style="border-top: 1px solid var(--ga-border);">
-      <button type="submit" name="intent" value="save" class="ga-btn ga-btn-primary">
-        Save changes
+    <div class="flex items-center gap-3 pt-4" style="border-top: 1px solid var(--ga-border);">
+      <button type="submit" name="intent" value="save_and_rerun" class="ga-btn ga-btn-primary"
+              onclick="var f=this.form; if(!f) return; var n=document.getElementById('rerun-skeleton'); if(n) n.style.display='block'; this.setAttribute('disabled','true'); this.textContent='Saving…';">
+        Save
       </button>
-      <button type="submit" name="intent" value="save_and_rerun" class="ga-btn ga-btn-secondary"
-              onclick="var f=this.form; if(!f) return; var n=document.getElementById('rerun-skeleton'); if(n) n.style.display='block'; this.setAttribute('disabled','true'); this.textContent='Updating flags…';">
-        Save &amp; update flags now
-      </button>
+      <span class="text-xs ga-text-muted">Applies the change and re-checks recent notes.</span>
     </div>
   </form>
   <div id="rerun-skeleton" class="mt-4 space-y-3" style="display:none" aria-live="polite">
@@ -128,8 +127,11 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
 }
 
 function renderSavedBanner(newVersion: number): string {
+  // Fallback banner for the rare no-rerun path (older ?saved= bookmark,
+  // silent revert). Post-Batch-2 the primary Save always triggers a
+  // rerun, which shows renderRerunResult instead.
   return `<div class="mt-4 rounded-md p-3 text-sm ga-sev-green" style="border: 1px solid var(--ga-green-border);">
-  Saved. Now at version ${newVersion}. Click <strong>Save &amp; update flags now</strong> to re-check notes against the new rule.
+  Saved as version ${newVersion}.
 </div>`;
 }
 
@@ -188,7 +190,7 @@ export function renderImpactPreview(ruleKey: string, impact: ImpactPreview | nul
     // LLM-evaluated rule — no cheap preview possible.
     return `<div id="impact-preview" class="rounded-md p-4 text-sm ga-text" style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border);">
       <div class="font-medium ga-text-strong">Live preview not available for this rule</div>
-      <p class="mt-1 text-xs ga-text-muted">This rule asks the system to read note content, which takes a few seconds per note. Click <strong>Save &amp; update flags now</strong> to see the effect across recent notes.</p>
+      <p class="mt-1 text-xs ga-text-muted">This rule asks the system to read note content, which takes a few seconds per note. Click <strong>Save</strong> to see the effect across recent notes.</p>
     </div>`;
   }
   const pct = impact.total_in_window > 0
@@ -197,7 +199,7 @@ export function renderImpactPreview(ruleKey: string, impact: ImpactPreview | nul
   return `<div id="impact-preview" class="relative rounded-md p-4 text-sm ga-text transition-opacity" data-dim-while-loading
        style="background-color: var(--ga-gold-bg); border: 1px solid var(--ga-gold-border);">
     <div class="font-medium ga-text-strong">At this setting, <span class="tnum">${impact.count}</span> of <span class="tnum">${impact.total_in_window}</span> notes (${pct}%) would be flagged</div>
-    <p class="mt-1 text-xs ga-text-muted">Preview covers ${escapeHtml(impact.window_start)} to ${escapeHtml(impact.window_end)}. Estimates update as you change thresholds. Click <strong>Save &amp; update flags now</strong> to apply.</p>
+    <p class="mt-1 text-xs ga-text-muted">Preview covers ${escapeHtml(impact.window_start)} to ${escapeHtml(impact.window_end)}. Estimates update as you change thresholds. Click <strong>Save</strong> to apply.</p>
     <span class="ga-indicator absolute top-3 right-3 text-xs" style="color: var(--ga-gold-bright);" data-inline aria-live="polite">Updating estimate…</span>
   </div>`;
 }

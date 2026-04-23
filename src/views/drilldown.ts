@@ -67,7 +67,7 @@ function renderMissingFlagsSection(missing: MissingFlagRow[]): string {
   const items = missing
     .map((m) => {
       const date = formatDateWithWeekday(m.scheduled_shift_date);
-      return `<li class="px-5 py-3 flex items-center justify-between gap-3 min-h-[44px]">
+      return `<li class="ga-cream-row-red px-5 py-3 flex items-center justify-between gap-3 min-h-[44px]">
     <div class="min-w-0">
       <div class="text-sm font-medium ga-text-strong">${escapeHtml(m.individual_name)}</div>
       <div class="text-xs ga-text">${escapeHtml(date)} · ${escapeHtml(m.scheduled_shift_name)} shift</div>
@@ -174,6 +174,7 @@ ${data.flags
     // previously they were anchor-wrapped with href="#" which looked
     // interactive and navigated to a dead anchor. Flags that DO have an
     // underlying note stay as links to /note/:tlog/:version.
+    const sevClass = f.severity === 'red' ? 'ga-cream-row-red' : 'ga-cream-row-amber';
     const inner = `<div class="flex items-center gap-3 flex-wrap">
       ${pill}
       <span class="text-xs font-medium ga-text">${escapeHtml(categoryLabel)}</span>
@@ -183,9 +184,9 @@ ${data.flags
     <p class="mt-2 text-sm ga-text-strong">${escapeHtml(f.reason)}</p>`;
     if (hasNote) {
       const link = `/note/${encodeURIComponent(f.tlog_id!)}/${encodeURIComponent(String(f.tlog_version))}`;
-      return `<li><a href="${link}" class="block px-5 py-4 ga-cream-row-hover ga-focus">${inner}</a></li>`;
+      return `<li class="${sevClass}"><a href="${link}" class="block px-5 py-4 ga-cream-row-hover ga-focus">${inner}</a></li>`;
     }
-    return `<li><div class="block px-5 py-4">${inner}</div></li>`;
+    return `<li class="${sevClass}"><div class="block px-5 py-4">${inner}</div></li>`;
   })
   .join('')}
 </ul>`;

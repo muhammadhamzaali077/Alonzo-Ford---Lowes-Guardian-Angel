@@ -376,6 +376,23 @@ export const DESIGN_TOKENS_STYLE = `<style>
     .ga-log-row-amber { border-left: var(--ga-log-row-amber); background-color: var(--ga-log-row-bg-amber); }
     .ga-log-row-green { border-left: var(--ga-log-row-green); background-color: var(--ga-log-row-bg-green); }
 
+    /* Severity-accent variant for rows inside cream surfaces (Batch 2).
+       Unlike .ga-log-row above (tuned for dark surface), these ONLY add
+       a 4px left accent bar. No background tint — rgba-red over cream
+       reads like a water stain, and the bar alone is unambiguous. If
+       severity contrast needs more punch later, revisit with a darker
+       accent bar (not a tint). Compose as "ga-cream-row-red" etc. on
+       an <li> or inner wrapper. */
+    .ga-cream-row-red,
+    .ga-cream-row-amber,
+    .ga-cream-row-green {
+      border-left-width: 4px;
+      border-left-style: solid;
+    }
+    .ga-cream-row-red   { border-left-color: var(--ga-red); }
+    .ga-cream-row-amber { border-left-color: var(--ga-amber); }
+    .ga-cream-row-green { border-left-color: var(--ga-green); }
+
     /* ------------------------------------------------------------------------
      * Buttons. Primary = gold; secondary = surface-elevated; ghost = bare.
      * Same .ga-btn-{primary|secondary|ghost} API so existing markup works.
