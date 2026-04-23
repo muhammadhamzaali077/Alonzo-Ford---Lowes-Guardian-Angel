@@ -108,8 +108,8 @@ export function contextualHelp(key: HelpKey): string {
   const paragraphs = entry.paragraphs
     .map((p) => `<p class="text-sm ga-text leading-6">${escapeText(p)}</p>`)
     .join('');
-  return `<details class="mt-4 rounded-md border border-gray-200 bg-white">
-  <summary class="flex items-center justify-between gap-3 cursor-pointer select-none px-5 py-3 min-h-[44px] text-sm ga-text hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
+  return `<details class="mt-4 ga-surface-cream">
+  <summary class="flex items-center justify-between gap-3 cursor-pointer select-none px-5 py-3 min-h-[44px] text-sm ga-cream-row-hover ga-focus rounded-md">
     <span class="inline-flex items-center gap-2">
       <svg class="w-4 h-4 ga-text-subtle" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
         <circle cx="10" cy="10" r="8" stroke-width="1.5"/>

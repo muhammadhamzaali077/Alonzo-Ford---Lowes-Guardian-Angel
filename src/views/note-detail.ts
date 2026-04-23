@@ -52,7 +52,7 @@ export function renderNoteDetail(data: NoteDetailViewData): string {
     <p class="mt-1 text-sm ga-text">${escapeHtml(n.individual_name)} · ${escapeHtml(n.location_name)}</p>
   </div>
 
-  <article class="mt-6 bg-white border border-gray-200 rounded-md p-5 sm:p-6">
+  <article class="mt-6 ga-surface-cream p-5 sm:p-6">
     <p class="text-base ga-text-strong leading-7 whitespace-pre-wrap">${escapeHtml(n.description)}</p>
   </article>
 
@@ -74,7 +74,7 @@ export function renderNoteDetail(data: NoteDetailViewData): string {
 }
 
 function renderNoFlags(): string {
-  return `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No flags on this note.</p>`;
+  return `<p class="mt-3 text-sm ga-surface-cream p-5">No flags on this note.</p>`;
 }
 
 function renderFlagCards(flags: NoteFlagRow[], feedback?: Map<number, FlagFeedbackState>): string {
@@ -90,7 +90,7 @@ function renderFlagCard(flag: NoteFlagRow, feedback?: FlagFeedbackState): string
 
   const audit = renderAuditDisclosure(flag);
 
-  return `<div class="bg-white border border-gray-200 rounded-md p-4 sm:p-5">
+  return `<div class="ga-surface-cream p-4 sm:p-5">
   <div class="flex items-center gap-2 flex-wrap">
     ${pill}
     <span class="text-xs font-medium ga-text">${escapeHtml(label)}</span>
@@ -113,7 +113,7 @@ export function renderFeedbackControl(flagId: number, feedback?: FlagFeedbackSta
   const counts = feedback?.counts ?? { up: 0, down: 0 };
   const myVerdict = feedback?.my_verdict ?? null;
   const postUrl = `/flags/${flagId}/feedback`;
-  return `<div id="flag-feedback-${flagId}" class="mt-3 pt-3 flex items-center gap-3 text-xs" style="border-top: 1px solid var(--ga-border);">
+  return `<div id="flag-feedback-${flagId}" class="mt-3 pt-3 flex items-center gap-3 text-xs" style="border-top: 1px solid var(--ga-cream-dim);">
     <span class="ga-text-muted">Is this flag useful?</span>
     ${renderThumbButton(flagId, 'up',   myVerdict === 'up',   counts.up,   postUrl)}
     ${renderThumbButton(flagId, 'down', myVerdict === 'down', counts.down, postUrl)}
@@ -128,9 +128,9 @@ function renderThumbButton(flagId: number, verdict: 'up' | 'down', active: boole
   const label = verdict === 'up' ? 'Mark this flag useful' : 'Mark this flag not useful';
   const activeStyle = active
     ? verdict === 'up'
-      ? 'background-color: var(--ga-green-bg); border-color: var(--ga-green-border); color: var(--ga-green);'
-      : 'background-color: var(--ga-red-bg); border-color: var(--ga-red-border); color: var(--ga-red);'
-    : 'background-color: var(--ga-surface); border-color: var(--ga-border-strong); color: var(--ga-text-muted);';
+      ? 'background-color: var(--ga-green-bg); border-color: var(--ga-green-border); color: var(--ga-green-strong);'
+      : 'background-color: var(--ga-red-bg); border-color: var(--ga-red-border); color: var(--ga-red-strong);'
+    : 'background-color: var(--ga-cream-soft); border-color: var(--ga-cream-dim); color: var(--ga-text-on-light-muted);';
   return `<button type="button"
           hx-post="${postUrl}"
           hx-vals='{"verdict":"${verdict}"}'
@@ -168,7 +168,7 @@ function renderAuditDisclosure(flag: NoteFlagRow): string {
     .join('');
 
   return `<details class="mt-3">
-  <summary class="cursor-pointer select-none text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600 rounded inline-block py-1 -my-1">How was this flagged?</summary>
+  <summary class="cursor-pointer select-none text-xs ga-link ga-focus rounded inline-block py-1 -my-1">How was this flagged?</summary>
   <dl class="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs ga-text">${dl}</dl>
 </details>`;
 }

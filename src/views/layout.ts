@@ -86,17 +86,17 @@ function renderShortcutsOverlay(): string {
   const item = (keys: string, label: string): string =>
     `<div class="flex items-center justify-between gap-8">
   <span class="text-sm ga-text">${label}</span>
-  <kbd class="inline-flex items-center gap-1 rounded border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-mono ga-text-strong">${keys}</kbd>
+  <kbd class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-mono ga-text-strong" style="background-color: var(--ga-cream-soft); border: 1px solid var(--ga-cream-dim);">${keys}</kbd>
 </div>`;
   return `<div id="ga-shortcuts" role="dialog" aria-modal="false" aria-labelledby="ga-shortcuts-title" hidden
-  class="fixed inset-x-0 bottom-4 z-30 mx-auto w-[min(92vw,28rem)] rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+  class="fixed inset-x-0 bottom-4 z-30 mx-auto w-[min(92vw,28rem)] ga-surface-cream p-5 ga-shadow-md">
   <div class="flex items-start justify-between gap-4">
     <div>
       <h2 id="ga-shortcuts-title" class="text-sm font-semibold ga-text-strong">Keyboard shortcuts</h2>
       <p class="mt-0.5 text-xs ga-text-muted">Press <kbd class="font-mono">?</kbd> or <kbd class="font-mono">Esc</kbd> to close.</p>
     </div>
     <button type="button" data-shortcuts-close aria-label="Close shortcuts"
-            class="ga-text-muted hover:ga-text focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
+            class="ga-text-muted hover:ga-text ga-focus rounded">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 10M15 5L5 15"/>
       </svg>
@@ -255,11 +255,12 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
     return `<a href="${href}" class="${cls}"${activeStyle}>${label}</a>`;
   };
   // Logo: real asset at public/assets/lga-logo.png, served via /assets/*.
-  // Height is 40px — REQ-4's upper bound. The PNG intrinsic is 209x97, so
-  // at 40px tall it renders ~86px wide, which matches the brand's typical
-  // header presence on the LGA site. Width is intrinsic from the PNG.
-  const logo = `<a href="/" class="flex items-center gap-3 ga-transition focus:outline-none ga-focus rounded" aria-label="Lowe's Guardian Angel — home">
-      <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" height="40" style="height: 40px; width: auto; display: block;">
+  // Desktop: 40px (REQ-4 upper bound). Mobile (<640px): 28px so the nav row
+  // has room for the hamburger beside it without crowding. The PNG intrinsic
+  // is 209x97; width scales from height. `.ga-logo-img` is defined in the
+  // design-tokens stylesheet so the media query lives with the other sizes.
+  const logo = `<a href="/" class="flex items-center gap-3 ga-transition ga-focus rounded" aria-label="Lowe's Guardian Angel — home">
+      <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" class="ga-logo-img">
     </a>`;
   return `  <header style="background-color: var(--ga-bg); border-bottom: 1px solid var(--ga-border);">
     <div class="mx-auto max-w-7xl px-4 sm:px-6">

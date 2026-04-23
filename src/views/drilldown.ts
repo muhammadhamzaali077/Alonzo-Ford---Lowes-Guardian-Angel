@@ -23,13 +23,13 @@ export function renderLocationView(data: LocationViewData): string {
 
   const listHtml =
     data.angels.length === 0
-      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No angels assigned to this location yet.</p>`
-      : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+      ? `<p class="mt-3 text-sm ga-surface-cream p-5">No angels assigned to this location yet.</p>`
+      : `<ul class="mt-3 ga-surface-cream">
 ${data.angels
   .map((a) => {
     const counts = flagCountsCell(a.red_content, a.yellow_count, a.missing_count);
     return `<li>
-  <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(a.angel_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
+  <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(a.angel_id)}" class="flex items-center justify-between px-5 py-4 gap-3 ga-cream-row-hover ga-focus min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
       ${rollupPill(a.red_content, a.yellow_count, a.missing_count)}
       <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(a.angel_name)}</span>
@@ -67,14 +67,14 @@ function renderMissingFlagsSection(missing: MissingFlagRow[]): string {
       <div class="text-sm font-medium ga-text-strong">${escapeHtml(m.individual_name)}</div>
       <div class="text-xs ga-text">${escapeHtml(date)} · ${escapeHtml(m.scheduled_shift_name)} shift</div>
     </div>
-    <span class="shrink-0 inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Missing note</span>
+    <span class="shrink-0 inline-flex items-center gap-1 rounded-md ga-sev-red px-2 py-1 text-xs font-medium" style="border: 1px solid var(--ga-red-border);">Missing note</span>
   </li>`;
     })
     .join('');
 
   return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Missing notes</h2>
   <p class="mt-1 text-sm ga-text">${missing.length} shift${missing.length === 1 ? '' : 's'} with no submitted documentation in this period.</p>
-  <ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">${items}</ul>`;
+  <ul class="mt-3 ga-surface-cream">${items}</ul>`;
 }
 
 function formatDateWithWeekday(isoDate: string): string {
@@ -104,13 +104,13 @@ export function renderAngelView(data: AngelViewData): string {
 
   const listHtml =
     data.individuals.length === 0
-      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">This angel hasn't written any notes in this period.</p>`
-      : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+      ? `<p class="mt-3 text-sm ga-surface-cream p-5">This angel hasn't written any notes in this period.</p>`
+      : `<ul class="mt-3 ga-surface-cream">
 ${data.individuals
   .map((i) => {
     const counts = flagCountsCell(i.red_content, i.yellow_count, i.missing_count);
     return `<li>
-  <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(data.angel.id)}/individual/${encodeURIComponent(i.individual_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
+  <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(data.angel.id)}/individual/${encodeURIComponent(i.individual_id)}" class="flex items-center justify-between px-5 py-4 gap-3 ga-cream-row-hover ga-focus min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
       ${rollupPill(i.red_content, i.yellow_count, i.missing_count)}
       <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(i.individual_name)}</span>
@@ -152,8 +152,8 @@ export function renderIndividualView(data: IndividualViewData): string {
 
   const listHtml =
     data.flags.length === 0
-      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No flagged notes in this period. Everything looks clean.</p>`
-      : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+      ? `<p class="mt-3 text-sm ga-surface-cream p-5">No flagged notes in this period. Everything looks clean.</p>`
+      : `<ul class="mt-3 ga-surface-cream">
 ${data.flags
   .map((f) => {
     const date = f.reported_date ?? f.scheduled_shift_date ?? '';
@@ -178,7 +178,7 @@ ${data.flags
     <p class="mt-2 text-sm ga-text-strong">${escapeHtml(f.reason)}</p>`;
     if (hasNote) {
       const link = `/note/${encodeURIComponent(f.tlog_id!)}/${encodeURIComponent(String(f.tlog_version))}`;
-      return `<li><a href="${link}" class="block px-5 py-4 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">${inner}</a></li>`;
+      return `<li><a href="${link}" class="block px-5 py-4 ga-cream-row-hover ga-focus">${inner}</a></li>`;
     }
     return `<li><div class="block px-5 py-4">${inner}</div></li>`;
   })

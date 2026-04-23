@@ -90,9 +90,7 @@ function renderChipBar(filters: DashboardViewData['filters'], windowPreset: stri
     return s ? '/?' + s : '/';
   };
   const chip = (label: string, href: string, active: boolean): string => {
-    const cls = active
-      ? 'inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700'
-      : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs ga-text hover:bg-gray-50 hover:border-gray-400';
+    const cls = active ? 'ga-chip ga-chip-active' : 'ga-chip';
     return `<a href="${href}" class="${cls}">${escapeHtml(label)}</a>`;
   };
   const hasAny = sev !== 'all' || shift !== 'all';
@@ -102,12 +100,12 @@ function renderChipBar(filters: DashboardViewData['filters'], windowPreset: stri
     ${chip('Red only', baseParams({ severity: 'red' }), sev === 'red')}
     ${chip('Yellow only', baseParams({ severity: 'yellow' }), sev === 'yellow')}
     ${chip('Missing only', baseParams({ severity: 'missing' }), sev === 'missing')}
-    <span class="mx-2 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+    <span class="mx-2 h-4 w-px" style="background-color: var(--ga-border);" aria-hidden="true"></span>
     ${chip('All shifts', baseParams({ shift: 'all' }), shift === 'all')}
     ${chip('Day', baseParams({ shift: 'Day' }), shift === 'Day')}
     ${chip('Swing', baseParams({ shift: 'Swing' }), shift === 'Swing')}
     ${chip('Overnight', baseParams({ shift: 'Overnight' }), shift === 'Overnight')}
-    ${hasAny ? `<a href="/" class="ml-1 text-xs ga-text-muted hover:text-blue-600 underline">Clear</a>` : ''}
+    ${hasAny ? `<a href="/" class="ml-1 text-xs ga-link">Clear</a>` : ''}
   </div>`;
 }
 
@@ -192,10 +190,9 @@ function renderFilter(data: DashboardViewData): string {
 
 function renderSeverityChip(value: string, label: string, selected: string | undefined): string {
   const active = (selected ?? 'all') === value;
-  const classes = active
-    ? 'px-3 min-h-[44px] rounded-md border border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium'
-    : 'px-3 min-h-[44px] rounded-md border border-gray-300 bg-white ga-text text-sm hover:bg-gray-50';
-  return `<label class="${classes} inline-flex items-center cursor-pointer">
+  const base = 'ga-chip cursor-pointer';
+  const cls = active ? `${base} ga-chip-active` : base;
+  return `<label class="${cls}" style="min-height: 44px;">
   <input type="radio" name="severity" value="${value}" ${active ? 'checked' : ''} class="sr-only">${escapeHtml(label)}
 </label>`;
 }
@@ -302,10 +299,10 @@ function renderLocationsList(
       (filters.shift && filters.shift !== 'all');
     if (filteredToNothing && (totalUnfiltered ?? 0) > 0) {
       return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
-<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No locations match the current filter. <a href="/" class="text-blue-600 hover:underline">Clear filter</a>.</p>`;
+<p class="mt-3 text-sm ga-surface-cream p-5">No locations match the current filter. <a href="/" class="ga-link">Clear filter</a>.</p>`;
     }
     return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
-<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No locations configured yet. Add one in Settings.</p>`;
+<p class="mt-3 text-sm ga-surface-cream p-5">No locations configured yet. Add one in Settings.</p>`;
   }
 
   const rowsHtml = rows

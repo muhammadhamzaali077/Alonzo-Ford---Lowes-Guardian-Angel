@@ -47,6 +47,8 @@ export const DESIGN_TOKENS_STYLE = `<style>
      *   --ga-dur-fast, --ga-dur, --ga-dur-slow, --ga-ease — motion timing
      *   --ga-log-row-*                                 — log-stream row accents
      *   --ga-size-*                                    — typography scale
+     *   --ga-cream, --ga-cream-*                       — light-inset surfaces (Batch 1.5)
+     *   --ga-text-on-light*                            — text for cream surfaces (Batch 1.5)
      * ====================================================================== */
     :root {
       /* ---- Surfaces (deep navy stack) ---------------------------- */
@@ -54,6 +56,16 @@ export const DESIGN_TOKENS_STYLE = `<style>
       --ga-surface:            #1a2547;  /* cards, panels — one step up */
       --ga-surface-elevated:   #242e52;  /* hover / active surfaces */
       --ga-surface-subtle:     rgba(255, 255, 255, 0.04);  /* row hover tint */
+
+      /* ---- Cream light-inset surfaces (Batch 1.5) -----------------
+         Stark white (#ffffff) on deep navy felt clinical and broke brand
+         continuity with the LGA marketing site's warm neutral sections.
+         Use these instead of bg-white anywhere a light inset is needed for
+         dense content (rules list, digest envelope body, scenario confirm).
+         Primary text on dark navy is still --ga-text-strong (#ffffff). */
+      --ga-cream:              #eae7dc;  /* LGA brand neutral — warm bone */
+      --ga-cream-soft:         #f2efe7;  /* lighter — subtle elevated areas */
+      --ga-cream-dim:          #d8d4c6;  /* darker — borders/dividers on cream */
 
       /* ---- Borders (low-contrast on navy) ------------------------ */
       --ga-border:             rgba(255, 255, 255, 0.08);
@@ -65,6 +77,17 @@ export const DESIGN_TOKENS_STYLE = `<style>
       --ga-text:               #e8eaf0;  /* body copy, readable default */
       --ga-text-muted:         #a0a8c0;  /* captions, metadata */
       --ga-text-subtle:        #6b7299;  /* disabled, placeholder */
+
+      /* ---- Text on light/cream surfaces (Batch 1.5) ---------------
+         The text-muted/subtle tokens above are tuned for dark navy and
+         bleed out to near-invisible on cream. Inside any .ga-surface-cream
+         container, descendant ga-text-* classes cascade to these on-light
+         variants automatically (see .ga-surface-cream rules below). Brand
+         continuity: on-light primary matches --ga-surface (#1a2547) exactly.
+         Contrast: #1a2547 on #eae7dc ≈ 11.2:1 (WCAG AAA). */
+      --ga-text-on-light:        #1a2547;  /* primary on cream */
+      --ga-text-on-light-muted:  #4a5580;  /* muted on cream */
+      --ga-text-on-light-subtle: #6b7299;  /* tertiary on cream */
 
       /* ---- Brand accent (gold) ----------------------------------- */
       --ga-gold:               #e8b53c;  /* primary accent — CTAs, logo halo, highlights */
@@ -171,11 +194,56 @@ export const DESIGN_TOKENS_STYLE = `<style>
     .ga-surface  { background-color: var(--ga-surface); }
     .ga-surface-elevated { background-color: var(--ga-surface-elevated); }
 
-    /* Text tiers */
+    /* Cream light-inset surface (Batch 1.5). Drop-in replacement for
+       bg-white + border-gray-200: warm bone background + cream border +
+       default radius. Cascades text color onto descendants so any
+       ga-text-* class inside it flips to the on-light variant without
+       having to touch every child's class attribute. */
+    .ga-surface-cream {
+      background-color: var(--ga-cream);
+      color: var(--ga-text-on-light);
+      border: 1px solid var(--ga-cream-dim);
+      border-radius: var(--ga-radius-md);
+    }
+    .ga-surface-cream-soft {
+      background-color: var(--ga-cream-soft);
+      color: var(--ga-text-on-light);
+      border: 1px solid var(--ga-cream-dim);
+      border-radius: var(--ga-radius-md);
+    }
+    /* Cascade: any ga-text-* INSIDE a cream surface flips to on-light. */
+    .ga-surface-cream .ga-text,
+    .ga-surface-cream-soft .ga-text              { color: var(--ga-text-on-light); }
+    .ga-surface-cream .ga-text-strong,
+    .ga-surface-cream-soft .ga-text-strong       { color: var(--ga-text-on-light); }
+    .ga-surface-cream .ga-text-muted,
+    .ga-surface-cream-soft .ga-text-muted        { color: var(--ga-text-on-light-muted); }
+    .ga-surface-cream .ga-text-subtle,
+    .ga-surface-cream-soft .ga-text-subtle       { color: var(--ga-text-on-light-subtle); }
+    /* Dividers inside cream lists use the dim cream, not white-alpha. */
+    .ga-surface-cream hr,
+    .ga-surface-cream-soft hr                    { border-color: var(--ga-cream-dim); }
+    /* Auto-divider for <ul class="ga-surface-cream"> row lists. */
+    ul.ga-surface-cream > li + li                { border-top: 1px solid var(--ga-cream-dim); }
+    /* Row hover — gentle cream-soft wash for clickable rows inside cream. */
+    .ga-cream-row-hover:hover,
+    .ga-cream-row-hover:focus                    { background-color: var(--ga-cream-soft); outline: none; }
+    /* Links stay gold but drop to the -dim variant for contrast on cream. */
+    .ga-surface-cream .ga-link,
+    .ga-surface-cream-soft .ga-link              { color: var(--ga-gold-dim); }
+    .ga-surface-cream .ga-link:hover,
+    .ga-surface-cream-soft .ga-link:hover        { color: var(--ga-gold); }
+
+    /* Text tiers — on dark surfaces (default). */
     .ga-text        { color: var(--ga-text); }
     .ga-text-strong { color: var(--ga-text-strong); }
     .ga-text-muted  { color: var(--ga-text-muted); }
     .ga-text-subtle { color: var(--ga-text-subtle); }
+
+    /* Opt-in text tiers for when you're composing manually on cream. */
+    .ga-text-on-light        { color: var(--ga-text-on-light); }
+    .ga-text-on-light-muted  { color: var(--ga-text-on-light-muted); }
+    .ga-text-on-light-subtle { color: var(--ga-text-on-light-subtle); }
 
     /* Severity — color + bg + border in one class (compose with "border") */
     .ga-sev-red    { color: var(--ga-red);   background-color: var(--ga-red-bg);   border-color: var(--ga-red-border); }
@@ -259,6 +327,42 @@ export const DESIGN_TOKENS_STYLE = `<style>
       outline: 2px solid transparent;
       box-shadow: inset 0 0 0 2px var(--ga-gold);
     }
+
+    /* Filter chips (Batch 1.5). Replaces former blue active / white
+       inactive treatment with gold on dark navy. Compose as
+       "ga-chip" (base) + "ga-chip-active" OR nothing (inactive). */
+    .ga-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: var(--ga-radius-pill);
+      border: 1px solid var(--ga-border);
+      background-color: transparent;
+      color: var(--ga-text-muted);
+      font-size: var(--ga-size-micro);
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color var(--ga-dur-fast) var(--ga-ease),
+                  border-color var(--ga-dur-fast) var(--ga-ease),
+                  color var(--ga-dur-fast) var(--ga-ease);
+    }
+    .ga-chip:hover {
+      border-color: var(--ga-border-strong);
+      color: var(--ga-text);
+    }
+    .ga-chip-active {
+      background-color: var(--ga-gold-bg);
+      border-color: var(--ga-gold-border);
+      color: var(--ga-gold-bright);
+    }
+    .ga-chip-active:hover {
+      border-color: var(--ga-gold);
+      color: var(--ga-gold-bright);
+    }
+    .ga-chip:focus-visible { outline: 2px solid transparent; box-shadow: var(--ga-focus); }
 
     /* Log-stream rows (new for home-page hero). Severity shows as a
        4px left border + whisper-tint fill. Compose as "ga-log-row
@@ -420,4 +524,12 @@ export const DESIGN_TOKENS_STYLE = `<style>
 
     /* Selection color — gold */
     ::selection { background-color: var(--ga-gold); color: #1a1406; }
+
+    /* Logo sizing — desktop 40px, mobile (<640px) 28px. Width auto-scales
+       from the PNG's 209x97 intrinsic aspect ratio. Mobile step matches
+       REQ-4 revision from Batch 1.5 ("scale down to ~28px on mobile"). */
+    .ga-logo-img { height: 40px; width: auto; display: block; }
+    @media (max-width: 639px) {
+      .ga-logo-img { height: 28px; }
+    }
   </style>`;

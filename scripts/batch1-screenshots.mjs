@@ -1,5 +1,5 @@
-// Batch 1 shell-verification screenshots: login + dashboard at desktop
-// (1440×900) and 375×667 mobile. One-shot — not shipped.
+// Batch 1 / 1.5 shell-verification screenshots: login + dashboard + rules
+// at desktop (1440×900) and 375×667 mobile. One-shot — not shipped.
 // Run: npm install --no-save puppeteer && node scripts/batch1-screenshots.mjs
 
 import puppeteer from 'puppeteer';
@@ -8,6 +8,9 @@ import { join } from 'node:path';
 
 const OUT = 'C:/Users/DELL/AppData/Local/Temp/ga-shots-batch1';
 mkdirSync(OUT, { recursive: true });
+
+const CAPTURE_RULES = true;
+const CAPTURE_DIGEST = true;
 
 const BASE = 'http://localhost:3000';
 
@@ -47,6 +50,23 @@ try {
     await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await new Promise((r) => setTimeout(r, 2000));
     await page.screenshot({ path: join(OUT, `${vp.label}-02-dashboard.png`), fullPage: false });
+
+    // Full-page dashboard screenshot to see the whole thing
+    await page.screenshot({ path: join(OUT, `${vp.label}-02b-dashboard-full.png`), fullPage: true });
+
+    if (CAPTURE_RULES) {
+      console.log(`[${vp.label}] capturing rules list...`);
+      await page.goto(`${BASE}/rules`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await new Promise((r) => setTimeout(r, 1500));
+      await page.screenshot({ path: join(OUT, `${vp.label}-03-rules.png`), fullPage: true });
+    }
+
+    if (CAPTURE_DIGEST) {
+      console.log(`[${vp.label}] capturing digest preview...`);
+      await page.goto(`${BASE}/digest/preview`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await new Promise((r) => setTimeout(r, 1500));
+      await page.screenshot({ path: join(OUT, `${vp.label}-04-digest.png`), fullPage: false });
+    }
 
     const dims = await page.evaluate(() => ({
       sw: document.body.scrollWidth,
