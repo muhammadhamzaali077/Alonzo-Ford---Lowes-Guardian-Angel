@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { processUpload } from './admin/upload.js';
 import { config } from './config.js';
@@ -225,6 +226,11 @@ if (process.env.DEBUG_TRACE === '1') {
   });
 }
 
+// Static file serving. Files live at `public/assets/*` in the repo root —
+// Railway ships the full repo so this works the same locally and in prod.
+// The LGA logo is served from `public/assets/lga-logo.png`.
+app.use('/assets/*', serveStatic({ root: './public' }));
+
 app.get('/healthz', (c) => c.text('ok'));
 app.get('/readyz', (c) => c.text('ready'));
 
@@ -242,7 +248,12 @@ function isPublicPath(path: string): boolean {
     path === '/auth/google/start' ||
     path === '/auth/google/callback' ||
     path === '/healthz' ||
-    path === '/readyz'
+    path === '/readyz' ||
+    // Static brand assets (logo, favicon, etc.) must bypass the auth gate —
+    // the login page itself references them so requiring auth creates a
+    // redirect loop. Served by the serveStatic middleware mounted at the
+    // top of the file.
+    path.startsWith('/assets/')
   );
 }
 

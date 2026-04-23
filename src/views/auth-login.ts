@@ -46,39 +46,48 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in · Guardian Angel</title>
+  <title>Sign in · Lowe's Guardian Angel</title>
+  <meta name="theme-color" content="#0a1532">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
   ${DESIGN_TOKENS_STYLE}
 </head>
 <body class="min-h-screen ga-bg ga-text antialiased flex items-center justify-center p-4">
   <main class="w-full max-w-sm">
-    <div class="ga-surface rounded-md p-6 ga-shadow-sm" style="border: 1px solid var(--ga-border);">
-      <h1 class="ga-h1 text-center">Guardian Angel</h1>
+    <div class="flex items-center justify-center mb-6">
+      <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" height="56" style="height: 56px; width: auto; display: block;">
+    </div>
+    <div class="ga-surface ga-shadow-md p-7"
+         style="border: 1px solid var(--ga-border); border-radius: var(--ga-radius-md);">
+      <h1 class="ga-h2 text-center">Sign in</h1>
+      <p class="ga-caption text-center mt-1">Compliance Monitor</p>
 
       ${errorBanner}
 
       <form method="post" action="/auth/login/demo" class="mt-6 space-y-4">
         <div>
-          <label for="login-email" class="block text-sm font-medium ga-text-strong">Email</label>
+          <label for="login-email" class="block text-sm font-semibold ga-text-strong mb-1">Email</label>
           <input id="login-email" name="email" type="email" required autocomplete="username"
                  value="${escapeHtml(opts.prefillEmail)}" list="demo-users"
-                 class="ga-input mt-1">
+                 class="ga-input">
           <datalist id="demo-users">
             ${suggestions.map((s) => `<option value="${escapeHtml(s)}"></option>`).join('')}
           </datalist>
         </div>
         <div>
-          <label for="login-password" class="block text-sm font-medium ga-text-strong">Password</label>
+          <label for="login-password" class="block text-sm font-semibold ga-text-strong mb-1">Password</label>
           <input id="login-password" name="password" type="password" required autocomplete="current-password"
                  value="${escapeHtml(opts.prefillPassword)}"
-                 class="ga-input mt-1">
+                 class="ga-input">
         </div>
         <button type="submit" class="ga-btn ga-btn-primary w-full">Sign in</button>
       </form>
 
       ${googleButton}
     </div>
-    ${config.PROTOTYPE_MODE ? `<p class="mt-3 text-center text-xs ga-text-muted">Prototype mode. Try demo@, alonzo@, vivian@, marcus@, anthony@, or elena@ lowesguardianangel.com.</p>` : ''}
+    ${config.PROTOTYPE_MODE ? `<p class="mt-4 text-center text-xs ga-text-muted">Prototype mode · Try demo@, alonzo@, vivian@, marcus@, anthony@, or elena@ lowesguardianangel.com</p>` : ''}
   </main>
 </body>
 </html>`;

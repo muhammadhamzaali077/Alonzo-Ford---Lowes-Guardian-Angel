@@ -56,6 +56,10 @@ export function layout({ title, body, dataCurrentAs, user, activeNav = null, pre
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
+  <meta name="theme-color" content="#0a1532">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   ${DESIGN_TOKENS_STYLE}
@@ -243,43 +247,55 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
   const navLink = (href: string, label: string, key: NavKey): string => {
     const active = key === activeNav;
     const cls = active
-      ? 'ga-text-strong font-medium'
-      : 'ga-text hover:text-blue-600';
-    return `<a href="${href}" class="${cls}">${label}</a>`;
+      ? 'px-3 py-1.5 rounded-md ga-text-strong font-semibold'
+      : 'px-3 py-1.5 rounded-md ga-text hover:ga-text-strong ga-transition';
+    const activeStyle = active
+      ? ` style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border);"`
+      : '';
+    return `<a href="${href}" class="${cls}"${activeStyle}>${label}</a>`;
   };
-  return `  <header class="ga-surface" style="border-bottom: 1px solid var(--ga-border);">
+  // Logo: real asset at public/assets/lga-logo.png, served via /assets/*.
+  // Height is 40px — REQ-4's upper bound. The PNG intrinsic is 209x97, so
+  // at 40px tall it renders ~86px wide, which matches the brand's typical
+  // header presence on the LGA site. Width is intrinsic from the PNG.
+  const logo = `<a href="/" class="flex items-center gap-3 ga-transition focus:outline-none ga-focus rounded" aria-label="Lowe's Guardian Angel — home">
+      <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" height="40" style="height: 40px; width: auto; display: block;">
+    </a>`;
+  return `  <header style="background-color: var(--ga-bg); border-bottom: 1px solid var(--ga-border);">
     <div class="mx-auto max-w-7xl px-4 sm:px-6">
-      <div class="flex items-center justify-between h-16">
-        <a href="/" class="text-[1.0625rem] font-semibold ga-text-strong hover:text-[color:var(--ga-blue-strong)] ga-transition" style="letter-spacing: -0.01em;">Guardian Angel</a>
-        <nav class="hidden md:flex items-center gap-6 text-sm" aria-label="Primary">
+      <div class="flex items-center justify-between h-20">
+        ${logo}
+        <nav class="hidden md:flex items-center gap-2 text-sm" aria-label="Primary">
           ${navLink('/', 'Dashboard', 'dashboard')}
           ${showRules ? navLink('/rules', 'Rules', 'rules') : ''}
           ${showSettings ? navLink('/admin/org', 'Settings', 'settings') : ''}
-          <details class="relative">
-            <summary class="cursor-pointer select-none list-none ga-text hover:text-blue-600 flex items-center gap-1 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
+          <details class="relative ml-2">
+            <summary class="cursor-pointer select-none list-none ga-text hover:ga-text-strong ga-transition flex items-center gap-1 px-3 py-1.5 rounded-md focus:outline-none ga-focus">
               ${escapeHtml(user.name)}
               <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4"/></svg>
             </summary>
-            <div class="absolute right-0 top-full mt-1 min-w-[12rem] rounded-md border border-gray-200 bg-white shadow-sm py-1 z-10">
-              <a href="/presenter/on" class="block px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">Enter presenter mode</a>
+            <div class="absolute right-0 top-full mt-1 min-w-[12rem] py-1 z-10 ga-shadow-md"
+                 style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border-strong); border-radius: var(--ga-radius-md);">
+              <a href="/presenter/on" class="block px-3 py-2 text-sm ga-text ga-transition" style="border-radius: var(--ga-radius-sm);" onmouseover="this.style.backgroundColor='var(--ga-surface-subtle)'" onmouseout="this.style.backgroundColor=''">Enter presenter mode</a>
               <form action="/auth/logout" method="post">
-                <button type="submit" class="block w-full text-left px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">Log out</button>
+                <button type="submit" class="block w-full text-left px-3 py-2 text-sm ga-text ga-transition" style="border-radius: var(--ga-radius-sm);" onmouseover="this.style.backgroundColor='var(--ga-surface-subtle)'" onmouseout="this.style.backgroundColor=''">Log out</button>
               </form>
             </div>
           </details>
         </nav>
         <details class="md:hidden relative">
-          <summary class="cursor-pointer select-none list-none p-2 -mr-2 ga-text focus:outline-none focus:ring-2 focus:ring-blue-600 rounded" aria-label="Open menu">
+          <summary class="cursor-pointer select-none list-none p-2 -mr-2 ga-text focus:outline-none ga-focus rounded" aria-label="Open menu">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </summary>
-          <div class="absolute right-0 top-full mt-1 min-w-[12rem] rounded-md border border-gray-200 bg-white shadow-sm py-1 z-10">
-            <a href="/" class="block px-3 py-3 text-sm ga-text hover:bg-gray-50 min-h-[44px]">Dashboard</a>
-            ${showRules ? '<a href="/rules" class="block px-3 py-3 text-sm ga-text hover:bg-gray-50 min-h-[44px]">Rules</a>' : ''}
-            ${showSettings ? '<a href="/admin/org" class="block px-3 py-3 text-sm ga-text hover:bg-gray-50 min-h-[44px]">Settings</a>' : ''}
-            <div class="border-t border-gray-200 mt-1 pt-1">
+          <div class="absolute right-0 top-full mt-1 min-w-[12rem] py-1 z-10 ga-shadow-md"
+               style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border-strong); border-radius: var(--ga-radius-md);">
+            <a href="/" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Dashboard</a>
+            ${showRules ? '<a href="/rules" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Rules</a>' : ''}
+            ${showSettings ? '<a href="/admin/org" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Settings</a>' : ''}
+            <div class="mt-1 pt-1" style="border-top: 1px solid var(--ga-border);">
               <div class="px-3 py-1 text-xs ga-text-muted">Signed in as ${escapeHtml(user.name)}</div>
               <form action="/auth/logout" method="post">
-                <button type="submit" class="block w-full text-left px-3 py-3 text-sm ga-text hover:bg-gray-50 min-h-[44px]">Log out</button>
+                <button type="submit" class="block w-full text-left px-3 py-3 text-sm ga-text min-h-[44px]">Log out</button>
               </form>
             </div>
           </div>
@@ -292,27 +308,26 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
 function renderDataBar(dataCurrentAs: string): string {
   // Meta-information band beneath the primary nav. Kept small + muted so
   // nothing in it competes with the nav or the page title below it.
-  // The Demo-data pill uses filled dot (--ga-amber), not an outline ring —
-  // easier to spot at a glance that this is synthetic data.
   const badge = config.PROTOTYPE_MODE
-    ? `      <span class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ga-sev-amber" title="Synthetic data — no real individuals">
-        <span class="h-2 w-2 rounded-full ga-sev-amber-dot" aria-hidden="true"></span>
+    ? `      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium ga-sev-amber" style="border: 1px solid var(--ga-amber-border); border-radius: var(--ga-radius-pill);" title="Synthetic data — no real individuals">
+        <span class="h-1.5 w-1.5 rounded-full ga-sev-amber-dot" aria-hidden="true"></span>
         Demo data
-        <span class="hidden sm:inline font-normal" style="color: var(--ga-amber-strong); opacity: 0.85;">· synthetic, no real individuals</span>
+        <span class="hidden sm:inline font-normal" style="opacity: 0.85;">· synthetic, no real individuals</span>
       </span>`
     : '';
-  return `  <div class="ga-surface" style="border-bottom: 1px solid var(--ga-border);">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-1.5 text-[11px] ga-text-muted flex flex-wrap items-center justify-between gap-x-4 gap-y-1" style="letter-spacing: 0.01em;">
-      <span>Data current as of ${escapeHtml(dataCurrentAs)}</span>
+  return `  <div style="background-color: var(--ga-surface); border-bottom: 1px solid var(--ga-border);">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-2 text-[11px] ga-text-muted flex flex-wrap items-center justify-between gap-x-4 gap-y-1" style="letter-spacing: 0.02em;">
+      <span class="ga-micro">Data current as of ${escapeHtml(dataCurrentAs)}</span>
 ${badge}
     </div>
   </div>`;
 }
 
 function renderFooter(): string {
-  return `  <footer class="mt-12 border-t border-gray-200">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 text-xs ga-text-muted">
-      Guardian Angel Compliance Monitor · Lowe's Guardian Angel
+  return `  <footer class="mt-12" style="border-top: 1px solid var(--ga-border);">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-5 text-xs ga-text-muted flex items-center justify-between gap-4 flex-wrap">
+      <span>Guardian Angel Compliance Monitor</span>
+      <span style="color: var(--ga-gold); opacity: 0.7;">Lowe's Guardian Angel</span>
     </div>
   </footer>`;
 }
