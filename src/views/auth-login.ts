@@ -7,6 +7,7 @@
 
 import { config } from '../config.js';
 import { escapeHtml } from './layout.js';
+import { DESIGN_TOKENS_STYLE } from './design-tokens-css.js';
 
 export type LoginErrorCode =
   | 'invalid_credentials'
@@ -24,9 +25,7 @@ export interface AuthLoginViewOptions {
 export function renderLoginPage(opts: AuthLoginViewOptions): string {
   const errorBanner = opts.error ? renderError(opts.error) : '';
   const googleButton = opts.googleEnabled
-    ? `<a href="/auth/google/start" class="mt-3 inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-sm font-medium ga-text-strong hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
-      Sign in with Google
-    </a>`
+    ? `<a href="/auth/google/start" class="ga-btn ga-btn-secondary mt-3 w-full">Sign in with Google</a>`
     : '';
 
   // Suggested emails as datalist — lets the demo presenter pick a manager
@@ -49,11 +48,12 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in · Guardian Angel</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  ${DESIGN_TOKENS_STYLE}
 </head>
 <body class="min-h-screen ga-bg ga-text antialiased flex items-center justify-center p-4">
   <main class="w-full max-w-sm">
-    <div class="bg-white border border-gray-200 rounded-md p-6">
-      <h1 class="text-xl font-semibold ga-text-strong text-center">Guardian Angel</h1>
+    <div class="ga-surface rounded-md p-6 ga-shadow-sm" style="border: 1px solid var(--ga-border);">
+      <h1 class="ga-h1 text-center">Guardian Angel</h1>
 
       ${errorBanner}
 
@@ -62,7 +62,7 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
           <label for="login-email" class="block text-sm font-medium ga-text-strong">Email</label>
           <input id="login-email" name="email" type="email" required autocomplete="username"
                  value="${escapeHtml(opts.prefillEmail)}" list="demo-users"
-                 class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+                 class="ga-input mt-1">
           <datalist id="demo-users">
             ${suggestions.map((s) => `<option value="${escapeHtml(s)}"></option>`).join('')}
           </datalist>
@@ -71,11 +71,9 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
           <label for="login-password" class="block text-sm font-medium ga-text-strong">Password</label>
           <input id="login-password" name="password" type="password" required autocomplete="current-password"
                  value="${escapeHtml(opts.prefillPassword)}"
-                 class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+                 class="ga-input mt-1">
         </div>
-        <button type="submit" class="inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
-          Sign in
-        </button>
+        <button type="submit" class="ga-btn ga-btn-primary w-full">Sign in</button>
       </form>
 
       ${googleButton}
@@ -93,5 +91,5 @@ function renderError(error: LoginErrorCode): string {
     : error === 'google_unprovisioned' ? "Your company account isn't set up for Guardian Angel yet. Ask your admin to add you."
     : error === 'google_failed' ? 'Sign-in with Google failed. Try again, or use the email and password form.'
     : 'Something went wrong. Try again.';
-  return `<div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">${escapeHtml(msg)}</div>`;
+  return `<div class="mt-4 rounded-md border p-3 text-sm ga-sev-red">${escapeHtml(msg)}</div>`;
 }

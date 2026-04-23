@@ -23,9 +23,7 @@ export function renderUploadPage(result?: UploadResult): string {
     </label>
     <p data-upload-filename class="mt-2 text-xs ga-text tnum"></p>
     <div class="mt-4 flex gap-2">
-      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
-        Upload
-      </button>
+      <button type="submit" class="ga-btn ga-btn-primary">Upload</button>
     </div>
   </form>
 

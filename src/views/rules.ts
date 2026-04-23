@@ -31,8 +31,8 @@ export function renderRulesList(rules: Rule[]): string {
           <p class="mt-1 text-xs ga-text-muted">Version ${r.version}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <a href="/rules/${encodeURIComponent(r.rule_key)}/history" class="text-sm ga-text hover:text-blue-600 hover:underline py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Previous versions</a>
-          <a href="/rules/${encodeURIComponent(r.rule_key)}/edit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Edit</a>
+          <a href="/rules/${encodeURIComponent(r.rule_key)}/history" class="ga-link text-sm">Previous versions</a>
+          <a href="/rules/${encodeURIComponent(r.rule_key)}/edit" class="ga-btn ga-btn-secondary">Edit</a>
         </div>
       </div>
     </li>`)
@@ -106,17 +106,15 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
       </div>
     </details>
 
-    <div class="flex items-center gap-3 pt-4 border-t border-gray-200 flex-wrap">
-      <button type="submit" name="intent" value="save"
-              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+    <div class="flex items-center gap-3 pt-4 flex-wrap" style="border-top: 1px solid var(--ga-border);">
+      <button type="submit" name="intent" value="save" class="ga-btn ga-btn-primary">
         Save changes
       </button>
-      <button type="submit" name="intent" value="save_and_rerun"
-              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+      <button type="submit" name="intent" value="save_and_rerun" class="ga-btn ga-btn-secondary"
               onclick="var f=this.form; if(!f) return; var n=document.getElementById('rerun-skeleton'); if(n) n.style.display='block'; this.setAttribute('disabled','true'); this.textContent='Updating flags…';">
         Save &amp; update flags now
       </button>
-      <a href="/rules/${encodeURIComponent(rule.rule_key)}/history" class="ml-auto text-sm text-blue-600 hover:underline">Previous versions</a>
+      <a href="/rules/${encodeURIComponent(rule.rule_key)}/history" class="ga-link ml-auto text-sm">Previous versions</a>
     </div>
   </form>
   <div id="rerun-skeleton" class="mt-4 space-y-3" style="display:none" aria-live="polite">

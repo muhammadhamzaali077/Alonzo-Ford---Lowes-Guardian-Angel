@@ -140,7 +140,7 @@ function renderTitleRow(data: DashboardViewData): string {
     <h1 class="ga-h1">Dashboard</h1>
     <p class="mt-1 ga-caption">${escapeHtml(data.window.label)} · ${scopeLabel}</p>
   </div>
-  <a href="/digest/preview" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border ga-surface text-sm font-medium ga-text ga-transition ga-focus hover:ga-shadow-sm" style="border-color: var(--ga-border-strong);">
+  <a href="/digest/preview" class="ga-btn ga-btn-secondary">
     Preview this week's email
   </a>
 </div>`;
@@ -160,16 +160,16 @@ function renderFilter(data: DashboardViewData): string {
       : '';
 
   return `<details id="filter-disclosure" class="mt-4 scroll-mt-24 text-sm">
-  <summary class="cursor-pointer select-none inline-flex items-center gap-1.5 text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600 rounded py-2 px-1 -my-2 -mx-1 min-h-[44px]">
-    <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
+  <summary class="ga-btn ga-btn-secondary cursor-pointer select-none list-none" style="padding-left: 12px; padding-right: 12px;">
+    <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h14M6 10h8M9 15h2"/>
     </svg>
     Filter
   </summary>
-  <form method="get" action="/" class="mt-3 bg-white border border-gray-200 rounded-md p-4 space-y-4">
+  <form method="get" action="/" class="mt-3 ga-surface rounded-md p-4 space-y-4" style="border: 1px solid var(--ga-border);">
     <div>
       <label for="f-window" class="block text-sm font-medium ga-text-strong">Date range</label>
-      <select id="f-window" name="window" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+      <select id="f-window" name="window" class="mt-1 block w-full rounded-md px-3 py-2 text-base ga-focus ga-transition" style="border: 1px solid var(--ga-border-strong); background-color: var(--ga-surface); color: var(--ga-text);">
         ${presets.map((p) => `<option value="${p.value}" ${presetSelected(p.value)}>${escapeHtml(p.label)}</option>`).join('')}
       </select>
     </div>
@@ -182,9 +182,9 @@ function renderFilter(data: DashboardViewData): string {
         ${renderSeverityChip('missing', 'Missing', data.filters.severity)}
       </div>
     </div>
-    <div class="flex gap-2 pt-2 border-t border-gray-200">
-      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">Apply</button>
-      <a href="/" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Reset</a>
+    <div class="flex gap-2 pt-2" style="border-top: 1px solid var(--ga-border);">
+      <button type="submit" class="ga-btn ga-btn-primary">Apply</button>
+      <a href="/" class="ga-btn ga-btn-ghost">Reset</a>
     </div>
   </form>
 </details>`;
