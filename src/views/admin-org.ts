@@ -21,7 +21,9 @@ export type AdminSection =
   | 'shift_schedules'
   | 'recipients'
   | 'ops'
-  | 'upload';
+  | 'upload'
+  | 'reset_demo'
+  | 'scenarios';
 
 const SECTIONS: Array<{ key: AdminSection; label: string; href: string }> = [
   { key: 'locations',       label: 'Locations',         href: '/admin/locations' },
@@ -32,6 +34,8 @@ const SECTIONS: Array<{ key: AdminSection; label: string; href: string }> = [
   { key: 'recipients',      label: 'Digest recipients', href: '/admin/recipients' },
   { key: 'upload',          label: 'Upload Therap export', href: '/admin/upload' },
   { key: 'ops',             label: 'System messages',   href: '/admin/ops' },
+  { key: 'scenarios',       label: 'Scenario presets',  href: '/admin/scenarios' },
+  { key: 'reset_demo',      label: 'Reset demo data',   href: '/admin/reset-demo' },
 ];
 
 export function renderSettingsShell(active: AdminSection, body: string): string {
@@ -501,4 +505,138 @@ export function renderOpsNoticesList(notices: OpsNotice[]): string {
     </li>`).join('')}
   </ul>`}`;
   return renderSettingsShell('ops', body);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Reset demo data (T126) — double-confirmation destructive action
+// -------------------------------------------------------------------------------------------------
+
+/**
+ * Two-step reset form. Step 1 shows a calm explanatory card with a primary
+ * button (`step=request`). Server re-renders with `confirmStep=true` after
+ * the first click — now the form carries `step=confirm` and the button is
+ * red. A second click actually runs the wipe.
+ *
+ * `resultMessage`, when non-null, is shown above the form after a completed
+ * reseed so the user can see how many rows came back.
+ */
+export function renderResetDemoForm(confirmStep: boolean, resultMessage: string | null): string {
+  const banner = resultMessage
+    ? `<div class="mt-4 rounded-md border p-3 text-sm ga-sev-green">${escapeHtml(resultMessage)}</div>`
+    : '';
+
+  const button = confirmStep
+    ? `<button type="submit" name="step" value="confirm"
+               class="ga-btn"
+               style="background-color: var(--ga-red); color: #ffffff; border-color: var(--ga-red);">
+          Yes — reset demo data now
+        </button>
+        <a href="/admin/reset-demo" class="ga-btn ga-btn-ghost">Cancel</a>`
+    : `<button type="submit" name="step" value="request" class="ga-btn ga-btn-secondary">
+          Reset demo data…
+        </button>`;
+
+  const warning = confirmStep
+    ? `<div class="mt-4 rounded-md border p-4 text-sm ga-sev-red" role="alert">
+        <p class="font-medium">This will erase every flag, note, and roster row.</p>
+        <p class="mt-1">After clicking, the database is wiped and re-seeded from the synthetic fixture. Your login stays active. Click <strong>Yes</strong> only if you want to start the demo over.</p>
+      </div>`
+    : '';
+
+  const body = `<h2 class="ga-h2">Reset demo data</h2>
+  <p class="mt-1 ga-body">Wipe every seeded row (notes, flags, schedules, roster) and reload the synthetic fixture. Useful between demos so the dashboard is back to its baseline state. Your login is preserved.</p>
+  ${banner}
+  ${warning}
+  <form method="post" action="/admin/reset-demo" class="mt-6 flex items-center gap-3 flex-wrap">
+    ${button}
+  </form>
+  <details class="mt-6">
+    <summary class="cursor-pointer select-none text-sm ga-link">What gets reset?</summary>
+    <ul class="mt-3 space-y-1 text-sm ga-text list-disc pl-5">
+      <li>T-Logs (all 648 synthetic notes)</li>
+      <li>Flags (red, yellow, missing)</li>
+      <li>Locations, angels, individuals, managers</li>
+      <li>Shift schedules and digest recipients</li>
+      <li>Rule configurations (reset to defaults)</li>
+      <li>Flag feedback (thumbs-up / thumbs-down history)</li>
+    </ul>
+    <p class="mt-3 text-sm ga-text-muted">Your login and any other logins are preserved.</p>
+  </details>`;
+  return renderSettingsShell('reset_demo', body);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Scenario presets (T123) — three-card picker with double-confirm per preset
+// -------------------------------------------------------------------------------------------------
+
+interface ScenarioCardData {
+  key: string;
+  label: string;
+  description: string;
+  severityHint: 'good' | 'neutral' | 'bad';
+  active: boolean;
+}
+
+export interface RenderScenariosOpts {
+  current: string;
+  scenarios: Array<{ key: string; label: string; description: string; severityHint: 'good' | 'neutral' | 'bad' }>;
+  /** Non-null when the last POST completed — shows a success banner. */
+  appliedMessage?: string | null;
+  /** When set, this scenario is one click away from being applied. */
+  pendingConfirm?: string | null;
+}
+
+export function renderScenariosForm(opts: RenderScenariosOpts): string {
+  const banner = opts.appliedMessage
+    ? `<div class="mt-4 rounded-md border p-3 text-sm ga-sev-green">${escapeHtml(opts.appliedMessage)}</div>`
+    : '';
+
+  const cards: ScenarioCardData[] = opts.scenarios.map((s) => ({
+    ...s,
+    active: s.key === opts.current,
+  }));
+
+  const grid = `<div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+    ${cards.map((c) => renderScenarioCard(c, opts.pendingConfirm === c.key)).join('')}
+  </div>`;
+
+  const body = `<h2 class="ga-h2">Scenario presets</h2>
+  <p class="mt-1 ga-body">Swap the shape of the seeded data to show Alonzo different states of the dashboard. Each preset wipes and re-seeds; your login stays active.</p>
+  ${banner}
+  ${grid}
+  <p class="mt-6 text-xs ga-text-muted">Current scenario: <strong class="ga-text">${escapeHtml(opts.current)}</strong></p>`;
+
+  return renderSettingsShell('scenarios', body);
+}
+
+function renderScenarioCard(c: ScenarioCardData, confirming: boolean): string {
+  const accentVar = c.severityHint === 'good' ? '--ga-green' : c.severityHint === 'bad' ? '--ga-red' : '--ga-blue';
+
+  const primaryButton = confirming
+    ? `<button type="submit" name="step" value="confirm"
+               class="ga-btn w-full"
+               style="background-color: var(--ga-red); color: #ffffff; border-color: var(--ga-red);">
+          Yes — apply "${escapeHtml(c.label)}"
+        </button>`
+    : `<button type="submit" name="step" value="request"
+               class="ga-btn ga-btn-secondary w-full"
+               ${c.active ? 'aria-pressed="true"' : ''}>
+          ${c.active ? 'Active' : 'Apply this scenario'}
+        </button>`;
+
+  const warning = confirming
+    ? `<p class="mt-2 text-xs ga-sev-red" role="alert" style="padding: 6px 8px; border-radius: 4px;">
+        This wipes the database and re-seeds. Click once more to confirm.
+      </p>`
+    : '';
+
+  return `<form method="post" action="/admin/scenarios" class="ga-surface rounded-md ga-shadow-sm ga-transition p-5"
+          style="border: 1px solid var(--ga-border); border-left: 2px solid var(${accentVar});">
+    <input type="hidden" name="preset" value="${escapeHtml(c.key)}">
+    <h3 class="ga-h2">${escapeHtml(c.label)}</h3>
+    <p class="mt-2 text-sm ga-text">${escapeHtml(c.description)}</p>
+    ${c.active ? `<p class="mt-2 text-xs ga-text-muted" style="padding: 4px 8px; background: var(--ga-blue-bg); border-radius: 4px; display: inline-block;">Currently active</p>` : ''}
+    ${warning}
+    <div class="mt-4">${primaryButton}</div>
+  </form>`;
 }

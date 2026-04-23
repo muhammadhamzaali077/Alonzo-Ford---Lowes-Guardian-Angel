@@ -25,9 +25,20 @@ export interface LoadTlogsResult {
  * A per-row failure (unknown enum, missing required field) is captured in
  * `skipped` but does NOT fail the batch (spec FR-003).
  */
-export function loadTlogsFromFixture(db: BetterSqliteDatabase = getDb()): LoadTlogsResult {
+/**
+ * Optional row transformer — lets scenario presets (T123) filter / amplify
+ * the baseline fixture without writing separate CSV files. Receives the
+ * parsed rows and returns the rows to actually load.
+ */
+export type CsvRowTransform = (rows: Record<string, string>[]) => Record<string, string>[];
+
+export function loadTlogsFromFixture(
+  db: BetterSqliteDatabase = getDb(),
+  transform?: CsvRowTransform,
+): LoadTlogsResult {
   const path = resolveFixture('lga_synthetic_tlogs.csv');
-  const rawRows = parseCsv(readFileSync(path, 'utf-8'));
+  const parsed = parseCsv(readFileSync(path, 'utf-8'));
+  const rawRows = transform ? transform(parsed) : parsed;
 
   const result: LoadTlogsResult = {
     parsed: rawRows.length,

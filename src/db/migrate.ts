@@ -5,7 +5,7 @@ import type { Database as BetterSqliteDatabase } from 'better-sqlite3';
 import { getDb } from './client.js';
 import { logger } from '../lib/logger.js';
 
-const CURRENT_SCHEMA_VERSION = 2; // v2: Phase 11 added user_sessions table (idempotent via IF NOT EXISTS)
+const CURRENT_SCHEMA_VERSION = 4; // v4: Phase 14 Tier 3 added flag_feedback + app_settings (idempotent via IF NOT EXISTS)
 
 /**
  * Apply any missing schema versions to the DB. Idempotent.

@@ -2,6 +2,7 @@
 // below, flag cards stacked, each with a "How was this flagged?" disclosure.
 
 import type { NoteDetailRow, NoteFlagRow } from '../db/queries/note.js';
+import type { FeedbackCounts, FeedbackVerdict } from '../db/queries/flag-feedback.js';
 import { escapeHtml } from './layout.js';
 import {
   displayCategoryLabel,
@@ -13,9 +14,17 @@ import {
 } from './ui.js';
 import { contextualHelp } from './contextual-help.js';
 
+/** Per-flag feedback state passed in from the server handler. */
+export interface FlagFeedbackState {
+  counts: FeedbackCounts;
+  my_verdict: FeedbackVerdict | null;
+}
+
 export interface NoteDetailViewData {
   note: NoteDetailRow;
   flags: NoteFlagRow[];
+  /** Map of flag.id → current feedback state for the rendering user. */
+  feedback?: Map<number, FlagFeedbackState>;
 }
 
 export function renderNoteDetail(data: NoteDetailViewData): string {
@@ -59,7 +68,7 @@ export function renderNoteDetail(data: NoteDetailViewData): string {
   </dl>
 
   <h2 class="mt-8 text-lg font-medium ga-text-strong">Flags</h2>
-  ${data.flags.length === 0 ? renderNoFlags() : renderFlagCards(data.flags)}
+  ${data.flags.length === 0 ? renderNoFlags() : renderFlagCards(data.flags, data.feedback)}
   ${contextualHelp('note')}
 </section>`;
 }
@@ -68,13 +77,13 @@ function renderNoFlags(): string {
   return `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No flags on this note.</p>`;
 }
 
-function renderFlagCards(flags: NoteFlagRow[]): string {
+function renderFlagCards(flags: NoteFlagRow[], feedback?: Map<number, FlagFeedbackState>): string {
   return `<div class="mt-3 space-y-3">
-${flags.map(renderFlagCard).join('')}
+${flags.map((f) => renderFlagCard(f, feedback?.get(f.id))).join('')}
 </div>`;
 }
 
-function renderFlagCard(flag: NoteFlagRow): string {
+function renderFlagCard(flag: NoteFlagRow, feedback?: FlagFeedbackState): string {
   const pill = severityPill(flag.severity === 'red' ? 'red' : 'yellow');
   const label = displayCategoryLabel(flag.display_category as DisplayCategory);
   const ruleLabel = flag.rule_name ? `${flag.rule_name}${flag.rule_version ? ' · version ' + flag.rule_version : ''}` : ruleLabelFromSource(flag.source);
@@ -89,7 +98,53 @@ function renderFlagCard(flag: NoteFlagRow): string {
   </div>
   <p class="mt-3 text-sm ga-text-strong leading-6">${escapeHtml(flag.reason)}</p>
   ${audit}
+  ${renderFeedbackControl(flag.id, feedback)}
 </div>`;
+}
+
+/**
+ * Per-flag thumbs-up / thumbs-down control. htmx-backed: POSTs to
+ * /flags/:id/feedback and swaps this fragment back in. Used so Alonzo
+ * can correct the system during a demo without leaving the note page.
+ *
+ * Exported so the POST endpoint can render the same fragment back.
+ */
+export function renderFeedbackControl(flagId: number, feedback?: FlagFeedbackState): string {
+  const counts = feedback?.counts ?? { up: 0, down: 0 };
+  const myVerdict = feedback?.my_verdict ?? null;
+  const postUrl = `/flags/${flagId}/feedback`;
+  return `<div id="flag-feedback-${flagId}" class="mt-3 pt-3 flex items-center gap-3 text-xs" style="border-top: 1px solid var(--ga-border);">
+    <span class="ga-text-muted">Is this flag useful?</span>
+    ${renderThumbButton(flagId, 'up',   myVerdict === 'up',   counts.up,   postUrl)}
+    ${renderThumbButton(flagId, 'down', myVerdict === 'down', counts.down, postUrl)}
+    ${myVerdict ? `<span class="ga-text-muted" aria-live="polite">Thanks — your feedback is recorded.</span>` : ''}
+  </div>`;
+}
+
+function renderThumbButton(flagId: number, verdict: 'up' | 'down', active: boolean, count: number, postUrl: string): string {
+  const iconPath = verdict === 'up'
+    ? 'M5 10v9a1 1 0 001 1h2a1 1 0 001-1v-9M5 10H3m2 0l3-6a2 2 0 012-1.5h.5a1.5 1.5 0 011.5 1.5V8h4.5a2 2 0 012 2.25l-1 6a2 2 0 01-2 1.75H9'
+    : 'M15 14V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v9m4 0h2m-2 0l-3 6a2 2 0 01-2 1.5h-.5a1.5 1.5 0 01-1.5-1.5V16H5.5a2 2 0 01-2-2.25l1-6A2 2 0 016.5 6H11';
+  const label = verdict === 'up' ? 'Mark this flag useful' : 'Mark this flag not useful';
+  const activeStyle = active
+    ? verdict === 'up'
+      ? 'background-color: var(--ga-green-bg); border-color: var(--ga-green-border); color: var(--ga-green);'
+      : 'background-color: var(--ga-red-bg); border-color: var(--ga-red-border); color: var(--ga-red);'
+    : 'background-color: var(--ga-surface); border-color: var(--ga-border-strong); color: var(--ga-text-muted);';
+  return `<button type="button"
+          hx-post="${postUrl}"
+          hx-vals='{"verdict":"${verdict}"}'
+          hx-target="#flag-feedback-${flagId}"
+          hx-swap="outerHTML"
+          aria-label="${escapeHtml(label)}"
+          aria-pressed="${active ? 'true' : 'false'}"
+          class="inline-flex items-center gap-1 rounded-md border px-2 py-1 ga-transition ga-focus"
+          style="${activeStyle}">
+    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="${iconPath}"/>
+    </svg>
+    ${count > 0 ? `<span class="tnum" style="font-weight:500;">${count}</span>` : ''}
+  </button>`;
 }
 
 function ruleLabelFromSource(source: string): string {

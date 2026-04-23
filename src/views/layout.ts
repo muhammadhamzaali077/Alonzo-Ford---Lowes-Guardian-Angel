@@ -33,10 +33,23 @@ export interface LayoutOptions {
   user?: LayoutUser;
   /** Which primary-nav item is currently active. */
   activeNav?: NavKey;
+  /**
+   * Presenter mode (T125). When true, hide header + data-bar + footer +
+   * keyboard-shortcut overlay so the screen is chrome-free for clean
+   * demo screenshots. The main content still renders with its normal
+   * padding. Toggled by the `ga_presenter=1` cookie at the request layer.
+   */
+  presenter?: boolean;
 }
 
-export function layout({ title, body, dataCurrentAs, user, activeNav = null }: LayoutOptions): string {
-  const showChrome = Boolean(user);
+export function layout({ title, body, dataCurrentAs, user, activeNav = null, presenter = false }: LayoutOptions): string {
+  const showChrome = Boolean(user) && !presenter;
+  const presenterExit = presenter
+    ? `<a href="/presenter/off" class="fixed bottom-3 right-3 z-40 inline-flex items-center gap-1.5 rounded-full ga-surface ga-text-muted ga-transition ga-focus px-3 py-1.5 text-xs font-medium ga-shadow-sm hover:ga-text-strong" style="border: 1px solid var(--ga-border-strong); opacity: 0.7;" aria-label="Exit presenter mode">
+        <span class="w-1.5 h-1.5 rounded-full" style="background: var(--ga-amber);" aria-hidden="true"></span>
+        Exit presenter
+      </a>`
+    : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -51,6 +64,7 @@ export function layout({ title, body, dataCurrentAs, user, activeNav = null }: L
 ${showChrome ? renderHeader({ user: user!, activeNav }) : ''}
 ${showChrome && dataCurrentAs ? renderDataBar(dataCurrentAs) : ''}
   <main id="main" class="mx-auto max-w-7xl px-4 sm:px-6 py-6">${body}</main>
+${presenterExit}
 ${showChrome ? renderShortcutsOverlay() : ''}
 ${showChrome ? renderFooter() : ''}
 ${showChrome ? renderCountUpScript() : ''}
@@ -246,7 +260,8 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
               ${escapeHtml(user.name)}
               <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 8l4 4 4-4"/></svg>
             </summary>
-            <div class="absolute right-0 top-full mt-1 min-w-[10rem] rounded-md border border-gray-200 bg-white shadow-sm py-1 z-10">
+            <div class="absolute right-0 top-full mt-1 min-w-[12rem] rounded-md border border-gray-200 bg-white shadow-sm py-1 z-10">
+              <a href="/presenter/on" class="block px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">Enter presenter mode</a>
               <form action="/auth/logout" method="post">
                 <button type="submit" class="block w-full text-left px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">Log out</button>
               </form>

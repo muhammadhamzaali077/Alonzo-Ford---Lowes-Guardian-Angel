@@ -15,7 +15,7 @@ import { pathToFileURL } from 'node:url';
 import { migrate } from '../db/migrate.js';
 import { loadOrgStructure } from '../ingestion/org-csv-loader.js';
 import { seedShiftSchedules } from '../db/seed-schedules.js';
-import { loadTlogsFromFixture } from '../ingestion/tlog-csv-loader.js';
+import { loadTlogsFromFixture, type CsvRowTransform } from '../ingestion/tlog-csv-loader.js';
 import { backfillSimilarity } from '../flagging/similarity.js';
 import { seedDefaultRules } from '../rules/seed-rules.js';
 import { seedUsers } from './seed-users.js';
@@ -47,14 +47,18 @@ function countRows(): SeedCounts {
   };
 }
 
-/** Run the full seed sequence regardless of current DB state. Each step is idempotent. */
-export function seedAll(): SeedCounts {
+/**
+ * Run the full seed sequence regardless of current DB state. Each step is
+ * idempotent. An optional `tlogTransform` reshapes the loaded rows for
+ * scenario presets (T123) — baseline applies no transform.
+ */
+export function seedAll(opts: { tlogTransform?: CsvRowTransform } = {}): SeedCounts {
   migrate();
   seedDefaultRules();
   loadOrgStructure();
   seedShiftSchedules();
   seedUsers(); // requires locations to exist (FK on user_location_scope)
-  loadTlogsFromFixture();
+  loadTlogsFromFixture(getDb(), opts.tlogTransform);
   // Backfill similarity for any rows that lack a score (e.g., rows inserted
   // before the Phase 3.5 inline hook landed). New rows get scored inline via
   // insertTlog, so this is usually a no-op.

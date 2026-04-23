@@ -430,10 +430,10 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 3.
 
 ### Tier 3 — approved, post Tier 2
 
-- [ ] T123 **Scenario presets** — second fixture set + `GET/POST /admin/scenario?preset={quiet|chaotic|baseline}`. Double confirmation on destructive reseed. New: `fixtures/scenarios/*`, `src/admin/scenarios.ts`, `src/views/admin-scenarios.ts`.
-- [ ] T124 **AI flag feedback** — new `flag_feedback(flag_id, user_id, verdict, note, created_at)` table; thumbs-up/down on flag cards; `POST /flags/:id/feedback`. Server-side only per Principle X.
-- [ ] T125 **Presenter mode** — cookie `ga_presenter=1` hides header + footer; toggle at `/presenter/on` and `/presenter/off`.
-- [ ] T126 **Reset demo data** button in Settings → System. Double confirmation. Re-runs `seedAll()` against a wiped DB.
+- [X] T123 **Scenario presets** — `GET/POST /admin/scenarios` with three preset cards (baseline / quiet / chaotic). Double confirmation on destructive reseed. Current scenario stored in new `app_settings` key/value table. **Deviation from brief**: instead of checking in separate fixture CSVs under `fixtures/scenarios/*`, presets are implemented as pure row-transforms over the single baseline fixture (quiet = drop High-priority + Jamal's short boilerplate; chaotic = triple Jamal's cluster + drop all Sunrise day-shift rows). Keeps the tree clean and lets us tune presets without regenerating fixtures. New files: `src/admin/scenarios.ts`, route additions in `src/server.ts`, `renderScenariosForm` in `src/views/admin-org.ts`.
+- [X] T124 **AI flag feedback** — new `flag_feedback(flag_id, user_id, verdict, note, created_at, updated_at)` table with UNIQUE(flag_id, user_id) and ON DELETE CASCADE; thumbs up/down rendered per flag on the note-detail page; `POST /flags/:id/feedback` htmx fragment swap. Server-side only per Principle X. New: `src/db/queries/flag-feedback.ts`, `renderFeedbackControl` in `src/views/note-detail.ts`.
+- [X] T125 **Presenter mode** — cookie `ga_presenter=1` flag threaded through `layout()`; suppresses header, data-bar, footer, and keyboard-shortcut overlay. Toggles at `GET /presenter/on` and `GET /presenter/off` (both redirect back via `?next=` or referer). Also added "Enter presenter mode" in header user dropdown and a persistent "Exit presenter" pill in the bottom-right corner when active.
+- [X] T126 **Reset demo data** — Settings sidebar entry at `/admin/reset-demo`, double-confirm flow (first POST re-renders with red Confirm button; second POST actually wipes). Preserves users + user_sessions; cascades cleanup via `src/admin/reset-demo.ts` wipeOrder. Prototype-only (404 when `PROTOTYPE_MODE=false`). Admin role required.
 
 ### Explicitly not doing (from Decisions log)
 

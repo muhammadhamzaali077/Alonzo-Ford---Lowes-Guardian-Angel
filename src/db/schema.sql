@@ -259,6 +259,38 @@ CREATE INDEX IF NOT EXISTS idx_ops_notices_category_time
   ON ops_notices(category, created_at DESC);
 
 -- -------------------------------------------------------------------------------------------------
+-- flag_feedback (T124) — user-submitted thumbs-up/down on flags during demos
+-- or review passes. One row per (flag, user); a user toggling their verdict
+-- updates in place via UPSERT. Server-side only per Principle X (no client
+-- storage). Accepts feedback on any flag source (not just ai_classifier) so
+-- managers can flag "missing-note detection is wrong here" too.
+-- -------------------------------------------------------------------------------------------------
+
+-- -------------------------------------------------------------------------------------------------
+-- app_settings (T123) — tiny key/value store for UI-scope settings that need
+-- to survive process restarts. Currently used for `current_scenario`; future
+-- uses (demo mode toggles, feature flags) should live here too.
+-- -------------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS flag_feedback (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  flag_id     INTEGER NOT NULL REFERENCES flags(id) ON DELETE CASCADE,
+  user_id     TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  verdict     TEXT    NOT NULL CHECK (verdict IN ('up','down')),
+  note        TEXT,
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(flag_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_flag_feedback_flag ON flag_feedback(flag_id);
+
+-- -------------------------------------------------------------------------------------------------
 -- Schema bookkeeping
 -- -------------------------------------------------------------------------------------------------
 
