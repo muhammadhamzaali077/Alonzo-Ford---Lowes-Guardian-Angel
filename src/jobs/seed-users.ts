@@ -52,6 +52,25 @@ export function seedUsers(db: BetterSqliteDatabase = getDb()): number {
      ON CONFLICT(user_id, location_id) DO NOTHING`,
   );
 
+  // Default digest recipients — Alonzo + Elaina (all-locations leadership)
+  // and the four managers scoped to their home location. Previously this
+  // was manual setup via the admin UI, so reset-demo / scenario switches
+  // left /digest/preview showing "No recipients yet". Seeding here keeps
+  // the preview populated across reseeds.
+  const insertRecipient = db.prepare(
+    `INSERT INTO digest_recipients (user_id, email, scope, cadence, day_of_week, hour_et, is_active)
+     SELECT @user_id, @email, @scope, 'weekly', 1, 8, 1
+      WHERE NOT EXISTS (SELECT 1 FROM digest_recipients WHERE email = @email AND scope = @scope)`,
+  );
+  const DEFAULT_RECIPIENTS: Array<{ user_id: string; email: string; scope: string }> = [
+    { user_id: 'u_alonzo', email: 'alonzo@lowesguardianangel.com', scope: 'all' },
+    { user_id: 'u_elaina', email: 'elaina@lowesguardianangel.com', scope: 'all' },
+    { user_id: 'u_vivian', email: 'vivian@lowesguardianangel.com', scope: 'LOC001' },
+    { user_id: 'u_marcus', email: 'marcus@lowesguardianangel.com', scope: 'LOC002' },
+    { user_id: 'u_anthony', email: 'anthony@lowesguardianangel.com', scope: 'LOC003' },
+    { user_id: 'u_elena',  email: 'elena@lowesguardianangel.com',  scope: 'LOC004' },
+  ];
+
   let inserted = 0;
   const txn = db.transaction(() => {
     for (const u of SEED_USERS) {
@@ -60,6 +79,9 @@ export function seedUsers(db: BetterSqliteDatabase = getDb()): number {
         insertScope.run({ user_id: u.id, location_id: locationId });
       }
       inserted++;
+    }
+    for (const r of DEFAULT_RECIPIENTS) {
+      insertRecipient.run(r);
     }
   });
   txn();

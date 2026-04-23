@@ -465,3 +465,11 @@ These are small UX issues / inconsistencies observed while implementing T117–T
 - [ ] T141 **Custom date range (PRD §user story 3).** Date filter today has four presets (7d / this_week / 30d / all). PRD implies "last Tuesday at Peachtree"-style queries. Surfaced by demo-readiness audit 2026-04-23. PRD-scoped; deliver post-prototype approval. Scope: add `from` / `to` date inputs to the filter form + a clean URL shape (`?from=YYYY-MM-DD&to=YYYY-MM-DD`), fall through to preset when blank.
   - **Note for T129 ID conflict**: same rationale as T140 — requested as T129 but that ID was already taken. Kept as T141.
 
+
+### Post-demo followups (captured 2026-04-23, post audit sign-off)
+
+Not blocking tomorrow's demo. Add properly with file paths + dependencies after the demo lands.
+
+- [ ] T142 **Locations-list counts wrap at 375px.** After the demo-readiness batch bumped the counts column to `sm:w-[11rem]`, mobile still falls back to `w-[9rem]` and the longest count strings (`NN red · NN yellow · NN missing`) wrap to two lines. Acceptable for demo; capture as a Tier 4 polish task. Options: shorten to `NNr · NNy · NNm` on mobile, or restructure the row as two stacked rows.
+- [ ] T143 **Real-classifier telemetry + resilience.** If the stub is going to stay in place for internal work beyond the demo, fix the failure-visibility gap that caused the audit: a full DB of `permanent_failure` rows with no surfaced warning anywhere. Scope: (a) admin-surfaced alert when `permanent_failure` count crosses a threshold, (b) per-error-code counts in an admin panel, (c) exponential-backoff retry on the 429 path before permanent-failing, (d) decide whether to keep attempting rate-limited models vs. fall back to a configured alt model. Prevents the same silent-break mode when we switch off the stub.
+- [ ] T144 **Stub-vs-real parity audit.** Once we have a paid OpenRouter model working, run the same note set through both paths and diff: do severity distributions match? does reason text shape match (length, format)? does the UI render both model_name values cleanly? The stub already uses the production model id for UI continuity; validate that the UI behaves identically when the real model returns its actual id.

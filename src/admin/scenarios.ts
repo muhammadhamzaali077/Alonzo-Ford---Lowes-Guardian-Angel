@@ -18,6 +18,9 @@ import { getDb } from '../db/client.js';
 import type { CsvRowTransform } from '../ingestion/tlog-csv-loader.js';
 import { logger } from '../lib/logger.js';
 import { seedAll } from '../jobs/seed.js';
+import { runAiPass, runDeterministicPass } from '../flagging/pipeline.js';
+import { prestageDemoFeedback } from './prestage-demo-feedback.js';
+import { config } from '../config.js';
 
 export type Scenario = 'baseline' | 'quiet' | 'chaotic';
 const VALID_SCENARIOS: readonly Scenario[] = ['baseline', 'quiet', 'chaotic'];
@@ -178,10 +181,10 @@ export interface ApplyScenarioResult {
   individuals: number;
 }
 
-export function applyScenario(
+export async function applyScenario(
   scenario: Scenario,
   db: BetterSqliteDatabase = getDb(),
-): ApplyScenarioResult {
+): Promise<ApplyScenarioResult> {
   logger.info({ scenario }, 'apply scenario: wiping');
   const wipe = db.transaction(() => {
     for (const t of WIPE_ORDER) db.prepare(`DELETE FROM ${t}`).run();
@@ -190,7 +193,36 @@ export function applyScenario(
 
   const counts = seedAll({ tlogTransform: transformFor(scenario) });
   setCurrentScenario(scenario, db);
-  logger.info({ scenario, t_logs: counts.t_logs }, 'apply scenario: complete');
+
+  // Run the flagging pipeline inline so the dashboard renders populated
+  // immediately after the POST completes. Without this the user sees an
+  // empty dashboard after every scenario switch and has to wait for a
+  // server restart. Deterministic pass is synchronous + fast; the AI pass
+  // under PROTOTYPE_STUB_CLASSIFIER runs in ~300ms for ~650 notes so it's
+  // safe to await here. If a real (network) classifier is wired up, this
+  // call becomes the bottleneck and should be moved back to fire-and-forget
+  // with a "flags refreshing..." banner on the dashboard.
+  const det = runDeterministicPass({}, db);
+  const ai = await runAiPass({}, db);
+
+  // Re-seed the demo thumbs-up — the wipe cleared flag_feedback, and we
+  // want the "1" counter to stay consistent across scenario switches.
+  if (config.PROTOTYPE_STUB_CLASSIFIER) {
+    prestageDemoFeedback(db);
+  }
+
+  logger.info(
+    {
+      scenario,
+      t_logs: counts.t_logs,
+      det_red: det.notification_level.red,
+      det_yellow: det.notification_level.yellow,
+      det_missing: det.missing.missing_written,
+      ai_red: ai.classified_red,
+      ai_yellow: ai.classified_yellow,
+    },
+    'apply scenario: complete',
+  );
 
   return {
     scenario,

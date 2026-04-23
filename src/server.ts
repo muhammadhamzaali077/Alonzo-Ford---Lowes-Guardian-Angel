@@ -69,7 +69,7 @@ import {
   getOverallCountsWithPrior,
 } from './db/queries/dashboard.js';
 import { getComplianceTrend } from './db/queries/compliance-score.js';
-import { getAnchorDate, getLastIngestedAt } from './db/queries/last-refresh.js';
+import { getAnchorDate, getFreshnessLabel, getLastIngestedAt } from './db/queries/last-refresh.js';
 import { getFlagsForNote, getNoteDetail } from './db/queries/note.js';
 import { rerunOnWindow, runAiPass, runDeterministicPass } from './flagging/pipeline.js';
 import { editRule, getActiveRule, listActiveRules, listRuleHistory, revertRule } from './rules/rules-admin.js';
@@ -77,6 +77,7 @@ import { previewCopyPaste, previewShortNote, type ImpactPreview } from './db/que
 import { seedIfEmpty } from './jobs/seed.js';
 import { resetDemoData } from './admin/reset-demo.js';
 import { applyScenario, getCurrentScenario, parseScenario, SCENARIOS } from './admin/scenarios.js';
+import { prestageDemoFeedback } from './admin/prestage-demo-feedback.js';
 import { humanizeSince, resolveWindowFromAnchor, type WindowPreset } from './lib/time.js';
 import { logger } from './lib/logger.js';
 import { renderDashboard } from './views/dashboard.js';
@@ -158,39 +159,9 @@ if (config.PROTOTYPE_MODE) {
     });
 }
 
-/**
- * Pre-stage exactly one thumbs-up feedback row so Alonzo sees a non-zero
- * counter on Jamal's first copy-paste flag when he hits the note page.
- * Idempotent (UPSERT on (flag_id, user_id)) and silently no-ops if the
- * target flag doesn't exist yet (e.g. if AI pass hadn't finished).
- */
-function prestageDemoFeedback(): void {
-  try {
-    const db = getDb();
-    const alonzo = db.prepare("SELECT id FROM users WHERE email = 'alonzo@lowesguardianangel.com'").get() as { id: string } | undefined;
-    if (!alonzo) return;
-    const flag = db
-      .prepare(
-        `SELECT id FROM flags
-          WHERE source = 'ai_classifier'
-            AND severity = 'red'
-            AND angel_id = 'ANG007'
-            AND resolution = 'open'
-            AND reason LIKE '%Near-identical content%'
-          ORDER BY id ASC
-          LIMIT 1`,
-      )
-      .get() as { id: number } | undefined;
-    if (!flag) return;
-    db.prepare(
-      `INSERT INTO flag_feedback (flag_id, user_id, verdict) VALUES (?, ?, 'up')
-         ON CONFLICT(flag_id, user_id) DO NOTHING`,
-    ).run(flag.id, alonzo.id);
-    logger.info({ flag_id: flag.id }, 'boot: pre-staged demo thumbs-up on Jamal cluster flag');
-  } catch (err) {
-    logger.warn({ err: String(err) }, 'boot: prestageDemoFeedback failed (non-fatal)');
-  }
-}
+// prestageDemoFeedback() lives in src/admin/prestage-demo-feedback.ts so
+// src/admin/scenarios.ts can call it on every scenario switch too (the
+// scenario wipe clears flag_feedback).
 
 // ---- App -----------------------------------------------------------------------------------------
 
@@ -429,7 +400,7 @@ app.get('/', (c) => {
       body,
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -453,7 +424,7 @@ app.get('/location/:loc', (c) => {
       body: renderLocationView({ location: loc, angels, missingFlags, window: windowRange }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -483,7 +454,7 @@ app.get('/location/:loc/angel/:ang', (c) => {
       }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -516,7 +487,7 @@ app.get('/location/:loc/angel/:ang/individual/:ind', (c) => {
       }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -553,7 +524,7 @@ app.get('/note/:tlog/:version', (c) => {
       body: renderNoteDetail({ note, flags, feedback }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -606,7 +577,7 @@ app.get('/rules', (c) => {
       body: renderRulesList(listActiveRules()),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'rules',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -630,7 +601,7 @@ app.get('/rules/:rule_key/edit', (c) => {
       }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'rules',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -744,7 +715,7 @@ app.post('/rules/:rule_key', async (c) => {
         }),
         user: { name: scope.user.name, role: scope.user.role },
         activeNav: 'rules',
-        dataCurrentAs: humanizeSince(getLastIngestedAt()),
+        dataCurrentAs: getFreshnessLabel(),
       }),
     );
   }
@@ -766,7 +737,7 @@ app.get('/rules/:rule_key/history', (c) => {
       body: renderRulesHistory(ruleKey, history),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'rules',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -865,7 +836,7 @@ function adminLayout(c: Parameters<typeof getCookie>[0], title: string, bodyHtml
     body: bodyHtml,
     user: { name: scope.user.name, role: scope.user.role },
     activeNav: 'settings',
-    dataCurrentAs: humanizeSince(getLastIngestedAt()),
+    dataCurrentAs: getFreshnessLabel(),
   });
 }
 
@@ -1272,7 +1243,7 @@ app.post('/admin/scenarios', async (c) => {
     );
   }
 
-  const result = applyScenario(preset);
+  const result = await applyScenario(preset);
   return c.html(
     adminLayout(
       c,
@@ -1339,7 +1310,7 @@ app.get('/admin/upload', (c) => {
       body: renderUploadPage(),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'settings',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -1373,7 +1344,7 @@ app.post('/admin/upload', async (c) => {
         }),
         user: { name: scope.user.name, role: scope.user.role },
         activeNav: 'settings',
-        dataCurrentAs: humanizeSince(getLastIngestedAt()),
+        dataCurrentAs: getFreshnessLabel(),
       }),
       400,
     );
@@ -1395,7 +1366,7 @@ app.post('/admin/upload', async (c) => {
         }),
         user: { name: scope.user.name, role: scope.user.role },
         activeNav: 'settings',
-        dataCurrentAs: humanizeSince(getLastIngestedAt()),
+        dataCurrentAs: getFreshnessLabel(),
       }),
       413,
     );
@@ -1410,7 +1381,7 @@ app.post('/admin/upload', async (c) => {
       body: renderUploadPage(result),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'settings',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -1431,7 +1402,7 @@ app.get('/digest/preview', async (c) => {
       }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -1479,7 +1450,7 @@ app.get('/search', (c) => {
       </section>`,
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
-      dataCurrentAs: humanizeSince(getLastIngestedAt()),
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
@@ -1589,4 +1560,5 @@ serve({ fetch: app.fetch, port: config.PORT }, (info) => {
 });
 
 export default app;
+
 
