@@ -6,6 +6,7 @@ import type { AngelAggregateRow, FlaggedNoteRow, IndividualAggregateRow, Missing
 import type { WindowRange } from '../lib/time.js';
 import { escapeHtml } from './layout.js';
 import { rollupPill, renderBreadcrumb, displayCategoryLabel, type DisplayCategory } from './ui.js';
+import { contextualHelp } from './contextual-help.js';
 
 export interface LocationViewData {
   location: { id: string; name: string; type: string };
@@ -52,6 +53,7 @@ ${data.angels
   <h2 class="mt-6 text-lg font-medium text-gray-900">Angels at this location</h2>
   ${listHtml}
   ${missingHtml}
+  ${contextualHelp('location')}
 </section>`;
 }
 
@@ -128,6 +130,7 @@ ${data.individuals
   </div>
   <h2 class="mt-6 text-lg font-medium text-gray-900">Individuals this angel wrote for</h2>
   ${listHtml}
+  ${contextualHelp('angel')}
 </section>`;
 }
 
@@ -186,6 +189,7 @@ ${data.flags
   </div>
   <h2 class="mt-6 text-lg font-medium text-gray-900">Flagged notes</h2>
   ${listHtml}
+  ${contextualHelp('individual')}
 </section>`;
 }
 

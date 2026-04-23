@@ -47,18 +47,177 @@ export function layout({ title, body, dataCurrentAs, user, activeNav = null }: L
   <style>
     /* The only bespoke utility — tabular-nums for aligned columns on numeric displays. */
     .tnum { font-variant-numeric: tabular-nums; }
+
+    /* htmx-indicator visibility: an element with .ga-indicator starts hidden;
+       htmx adds .htmx-request to the request-triggering element (or a parent
+       matched by hx-indicator), which flips the indicator on. A ~150ms delay
+       before the shimmer appears avoids flashing for sub-200ms responses. */
+    .ga-indicator { display: none; }
+    .htmx-request .ga-indicator,
+    .htmx-request.ga-indicator { display: block; }
+    .htmx-request .ga-indicator[data-inline],
+    .htmx-request.ga-indicator[data-inline] { display: inline-block; }
+
+    /* Shimmer used by skeleton loaders. A 1.4s animated gradient sliding
+       left-to-right. Matches the "calm healthcare" palette — no neon. */
+    .ga-shimmer {
+      background-color: rgb(243 244 246); /* gray-100 */
+      background-image: linear-gradient(90deg, rgb(243 244 246) 0%, rgb(229 231 235) 50%, rgb(243 244 246) 100%);
+      background-size: 200% 100%;
+      animation: ga-shimmer 1.4s ease-in-out infinite;
+      border-radius: 0.375rem;
+    }
+    @keyframes ga-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Buttons and trigger elements in-flight: disable + dim while waiting. */
+    .htmx-request[data-dim-while-loading] { opacity: 0.55; pointer-events: none; }
+
     /* Respect reduced-motion: disable htmx + CSS transitions for users who ask. */
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .ga-shimmer { animation: none !important; background-image: none !important; }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-[#fafafa] text-gray-900 text-base leading-6 antialiased">
 ${showChrome ? renderHeader({ user: user!, activeNav }) : ''}
 ${showChrome && dataCurrentAs ? renderDataBar(dataCurrentAs) : ''}
   <main id="main" class="mx-auto max-w-7xl px-4 sm:px-6 py-6">${body}</main>
+${showChrome ? renderShortcutsOverlay() : ''}
 ${showChrome ? renderFooter() : ''}
 ${showChrome ? renderCountUpScript() : ''}
+${showChrome ? renderShortcutsScript() : ''}
 </body>
 </html>`;
+}
+
+/**
+ * Keyboard shortcuts overlay (cheat sheet). Hidden by default; toggled by
+ * pressing `?`. Keeping the markup inline means no extra round trip when
+ * the user wants to remind themselves.
+ */
+function renderShortcutsOverlay(): string {
+  const item = (keys: string, label: string): string =>
+    `<div class="flex items-center justify-between gap-8">
+  <span class="text-sm text-gray-700">${label}</span>
+  <kbd class="inline-flex items-center gap-1 rounded border border-gray-300 bg-gray-50 px-2 py-0.5 text-xs font-mono text-gray-900">${keys}</kbd>
+</div>`;
+  return `<div id="ga-shortcuts" role="dialog" aria-modal="false" aria-labelledby="ga-shortcuts-title" hidden
+  class="fixed inset-x-0 bottom-4 z-30 mx-auto w-[min(92vw,28rem)] rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h2 id="ga-shortcuts-title" class="text-sm font-semibold text-gray-900">Keyboard shortcuts</h2>
+      <p class="mt-0.5 text-xs text-gray-500">Press <kbd class="font-mono">?</kbd> or <kbd class="font-mono">Esc</kbd> to close.</p>
+    </div>
+    <button type="button" data-shortcuts-close aria-label="Close shortcuts"
+            class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 10M15 5L5 15"/>
+      </svg>
+    </button>
+  </div>
+  <div class="mt-4 space-y-2">
+    ${item('/', 'Focus search')}
+    ${item('g d', 'Go to Dashboard')}
+    ${item('g r', 'Go to Rules')}
+    ${item('g s', 'Go to Settings')}
+    ${item('Esc', 'Close open disclosures')}
+    ${item('?', 'Show this help')}
+  </div>
+</div>`;
+}
+
+/**
+ * Keyboard handler. Treats a plain `/` as "focus the search input" (skipped
+ * inside form fields so it doesn't hijack typing). `g` starts a two-key
+ * leader sequence: the next key within 800ms fires a nav — `g d` → Dashboard,
+ * `g r` → Rules, `g s` → Settings. `Esc` closes any open `<details>`. `?`
+ * toggles the shortcuts overlay.
+ */
+function renderShortcutsScript(): string {
+  return `<script>
+(function () {
+  if (typeof document === 'undefined') return;
+  var overlay = document.getElementById('ga-shortcuts');
+  function toggleOverlay(show) {
+    if (!overlay) return;
+    if (typeof show === 'undefined') show = overlay.hasAttribute('hidden');
+    if (show) overlay.removeAttribute('hidden');
+    else overlay.setAttribute('hidden', '');
+  }
+  if (overlay) {
+    var closeBtn = overlay.querySelector('[data-shortcuts-close]');
+    if (closeBtn) closeBtn.addEventListener('click', function () { toggleOverlay(false); });
+  }
+
+  function isTyping(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toUpperCase();
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable === true;
+  }
+
+  function focusSearch() {
+    var input = document.querySelector('input[name="q"]');
+    if (input) { input.focus(); input.select && input.select(); return true; }
+    // No search input on this page — navigate to /search instead.
+    window.location.href = '/search';
+    return true;
+  }
+
+  var leaderActive = false;
+  var leaderTimeout;
+  function startLeader() {
+    leaderActive = true;
+    clearTimeout(leaderTimeout);
+    leaderTimeout = setTimeout(function () { leaderActive = false; }, 800);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    // Modifier keys (except Shift for ?) short-circuit — don't fight browser shortcuts.
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    // Esc closes open <details> elements and the overlay.
+    if (e.key === 'Escape') {
+      if (overlay && !overlay.hasAttribute('hidden')) { toggleOverlay(false); e.preventDefault(); return; }
+      var anyOpen = false;
+      document.querySelectorAll('details[open]').forEach(function (d) { d.removeAttribute('open'); anyOpen = true; });
+      if (anyOpen) e.preventDefault();
+      return;
+    }
+
+    if (isTyping(e.target)) return;
+
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      toggleOverlay();
+      e.preventDefault();
+      return;
+    }
+    if (e.key === '/') {
+      if (focusSearch()) e.preventDefault();
+      return;
+    }
+
+    if (leaderActive) {
+      var k = e.key.toLowerCase();
+      leaderActive = false;
+      clearTimeout(leaderTimeout);
+      if (k === 'd') { window.location.href = '/'; e.preventDefault(); return; }
+      if (k === 'r') { window.location.href = '/rules'; e.preventDefault(); return; }
+      if (k === 's') { window.location.href = '/admin/org'; e.preventDefault(); return; }
+      return;
+    }
+
+    if (e.key === 'g' || e.key === 'G') {
+      startLeader();
+      e.preventDefault();
+      return;
+    }
+  });
+})();
+</script>`;
 }
 
 /**

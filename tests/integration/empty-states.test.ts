@@ -99,9 +99,18 @@ test('LocationView renders zero-angel/zero-missing state gracefully', () => {
   assertNoRenderArtifacts(html, 'renderLocationView (empty)');
   assertHasFriendlyEmptyMessage(html, 'renderLocationView (empty)');
   assert.ok(html.includes('Ghost Home'), 'location name should appear in heading');
-  // Missing-notes section should NOT appear when missingFlags is empty —
-  // showing a section with zero rows is noise.
-  assert.ok(!html.includes('Missing notes'), 'Missing notes section should be hidden when empty');
+  // Missing-notes section should NOT render when missingFlags is empty —
+  // showing a section with zero rows is noise. (The contextual-help
+  // disclosure can still mention the phrase "Missing notes" in its prose;
+  // we look for the actual section heading to avoid a false positive.)
+  assert.ok(
+    !/<h2[^>]*>\s*Missing notes\s*<\/h2>/.test(html),
+    'Missing notes <h2> section should be hidden when empty',
+  );
+  assert.ok(
+    !html.includes('Missing note</span>'),
+    'No Missing-note pill badges should render when empty',
+  );
 });
 
 test('AngelView renders graceful "no notes written this period" message', () => {

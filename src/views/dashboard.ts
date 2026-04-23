@@ -8,6 +8,7 @@ import { escapeHtml } from './layout.js';
 import { rollupPill, locationTypeLabel } from './ui.js';
 import { renderTrendChart } from './trend-chart.js';
 import { renderSparkline, type SparklinePoint } from './sparkline.js';
+import { contextualHelp } from './contextual-help.js';
 
 export interface DashboardViewData {
   window: WindowRange;
@@ -28,17 +29,86 @@ export interface DashboardViewData {
 }
 
 export function renderDashboard(data: DashboardViewData): string {
+  // T120 — visible filter-chip bar above the tiles. Clicks drop you
+  // into the severity/shift filter via query string; the filter-disclosure
+  // form below is still there for date-range selection.
+  const filteredLocations = applyDashboardFilters(data.locations, data.filters);
   return `
 <section>
   ${data.showWelcome ? renderWelcomePanel() : ''}
   ${renderTitleRow(data)}
+  ${renderChipBar(data.filters, windowPresetFromLabel(data.window.label))}
   ${renderFilter(data)}
   ${renderTiles(data.overall)}
-  ${renderLocationsList(data.locations, data.sparklines)}
+  ${renderLocationsList(filteredLocations, data.sparklines, data.filters, data.locations.length)}
   ${renderTrendSection(data.trend)}
+  ${contextualHelp('dashboard')}
 </section>
 ${renderMobileFilterScrollScript()}
 `;
+}
+
+/**
+ * Apply the current severity/shift filter to the location rows rendered in
+ * the list. Shift filtering is a no-op here (flag counts are shift-agnostic
+ * at this aggregate level) but kept in the signature so the chip accepts
+ * the param without breaking — a future query refinement can honor it.
+ */
+function applyDashboardFilters(locations: LocationRow[], filters: DashboardViewData['filters']): LocationRow[] {
+  const sev = filters.severity;
+  if (!sev || sev === 'all') return locations;
+  return locations.filter((l) => {
+    if (sev === 'red')     return l.red_content > 0;
+    if (sev === 'yellow')  return l.yellow_count > 0;
+    if (sev === 'missing') return l.missing_count > 0;
+    return true;
+  });
+}
+
+function windowPresetFromLabel(label: string): string {
+  // Map the human label `resolveWindowFromAnchor` produces back to the
+  // query-param value. If the label isn't one we recognize (an arbitrary
+  // range from a future enhancement), fall through to the default '7d'.
+  if (label === 'Last 30 days') return '30d';
+  if (label === 'This week') return 'this_week';
+  if (label === 'All time') return 'all';
+  return '7d';
+}
+
+function renderChipBar(filters: DashboardViewData['filters'], windowPreset: string): string {
+  const sev = filters.severity ?? 'all';
+  const shift = filters.shift ?? 'all';
+  const baseParams = (overrides: Record<string, string | undefined>): string => {
+    const params = new URLSearchParams();
+    if (windowPreset && windowPreset !== '7d') params.set('window', windowPreset);
+    if ((overrides.severity ?? sev) !== 'all') params.set('severity', overrides.severity ?? sev);
+    if ((overrides.shift ?? shift) !== 'all') params.set('shift', overrides.shift ?? shift);
+    // Allow callers to explicitly clear a single dimension by passing 'all'.
+    if (overrides.severity === 'all') params.delete('severity');
+    if (overrides.shift === 'all') params.delete('shift');
+    const s = params.toString();
+    return s ? '/?' + s : '/';
+  };
+  const chip = (label: string, href: string, active: boolean): string => {
+    const cls = active
+      ? 'inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700'
+      : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 hover:border-gray-400';
+    return `<a href="${href}" class="${cls}">${escapeHtml(label)}</a>`;
+  };
+  const hasAny = sev !== 'all' || shift !== 'all';
+  return `<div class="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
+    <span class="text-xs text-gray-500 mr-1">Show:</span>
+    ${chip('All flags', baseParams({ severity: 'all' }), sev === 'all')}
+    ${chip('Red only', baseParams({ severity: 'red' }), sev === 'red')}
+    ${chip('Yellow only', baseParams({ severity: 'yellow' }), sev === 'yellow')}
+    ${chip('Missing only', baseParams({ severity: 'missing' }), sev === 'missing')}
+    <span class="mx-2 h-4 w-px bg-gray-300" aria-hidden="true"></span>
+    ${chip('All shifts', baseParams({ shift: 'all' }), shift === 'all')}
+    ${chip('Day', baseParams({ shift: 'Day' }), shift === 'Day')}
+    ${chip('Swing', baseParams({ shift: 'Swing' }), shift === 'Swing')}
+    ${chip('Overnight', baseParams({ shift: 'Overnight' }), shift === 'Overnight')}
+    ${hasAny ? `<a href="/" class="ml-1 text-xs text-gray-500 hover:text-blue-600 underline">Clear</a>` : ''}
+  </div>`;
 }
 
 function renderWelcomePanel(): string {
@@ -207,8 +277,21 @@ function renderComplianceArrow(delta: number): string {
   </svg>`;
 }
 
-function renderLocationsList(rows: LocationRow[], sparklines: Map<string, SparklinePoint[]>): string {
+function renderLocationsList(
+  rows: LocationRow[],
+  sparklines: Map<string, SparklinePoint[]>,
+  filters: DashboardViewData['filters'] = {},
+  totalUnfiltered?: number,
+): string {
   if (rows.length === 0) {
+    // Distinguish "no locations exist" from "filter hid everything".
+    const filteredToNothing =
+      (filters.severity && filters.severity !== 'all') ||
+      (filters.shift && filters.shift !== 'all');
+    if (filteredToNothing && (totalUnfiltered ?? 0) > 0) {
+      return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
+<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No locations match the current filter. <a href="/" class="text-blue-600 hover:underline">Clear filter</a>.</p>`;
+    }
     return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
 <p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No locations configured yet. Add one in Settings.</p>`;
   }

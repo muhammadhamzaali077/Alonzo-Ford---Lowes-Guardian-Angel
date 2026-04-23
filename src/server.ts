@@ -1166,15 +1166,35 @@ app.get('/search', (c) => {
       ? hits
       : hits.filter((h) => scope.locations.includes(h.program_id));
 
+  // htmx sub-request from the live-search input → return only the results
+  // fragment, keep the input in place (htmx swaps #search-results).
+  if (c.req.header('HX-Request') === 'true') {
+    return c.html(renderSearchResults(q, scopedHits));
+  }
+
   return c.html(
     layout({
       title: `Search · Guardian Angel`,
       body: `<section>
         <h1 class="text-2xl font-semibold text-gray-900">Search</h1>
         <form method="get" action="/search" class="mt-4">
-          <input name="q" value="${q.replace(/"/g, '&quot;')}" placeholder="Search notes…" class="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" autofocus>
+          <input name="q" value="${q.replace(/"/g, '&quot;')}"
+                 placeholder="Search notes…"
+                 class="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                 autofocus
+                 hx-get="/search"
+                 hx-trigger="input changed delay:300ms, keyup[key=='Enter'] delay:0ms"
+                 hx-target="#search-results"
+                 hx-swap="innerHTML"
+                 hx-indicator="#search-indicator"
+                 hx-push-url="true">
         </form>
-        <div class="mt-6">${renderSearchResults(q, scopedHits)}</div>
+        <div id="search-indicator" class="ga-indicator mt-4 space-y-2" aria-live="polite">
+          <div class="ga-shimmer h-14"></div>
+          <div class="ga-shimmer h-14"></div>
+          <div class="ga-shimmer h-14"></div>
+        </div>
+        <div id="search-results" class="mt-6">${renderSearchResults(q, scopedHits)}</div>
       </section>`,
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',

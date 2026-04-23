@@ -11,6 +11,7 @@ import {
   severityPill,
   type DisplayCategory,
 } from './ui.js';
+import { contextualHelp } from './contextual-help.js';
 
 export interface NoteDetailViewData {
   note: NoteDetailRow;
@@ -59,6 +60,7 @@ export function renderNoteDetail(data: NoteDetailViewData): string {
 
   <h2 class="mt-8 text-lg font-medium text-gray-900">Flags</h2>
   ${data.flags.length === 0 ? renderNoFlags() : renderFlagCards(data.flags)}
+  ${contextualHelp('note')}
 </section>`;
 }
 

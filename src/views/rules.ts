@@ -9,6 +9,7 @@ import type { Rule } from '../rules/rules-admin.js';
 import type { ImpactPreview } from '../db/queries/rule-impact.js';
 import { escapeHtml } from './layout.js';
 import { renderBreadcrumb } from './ui.js';
+import { contextualHelp } from './contextual-help.js';
 
 export function renderRulesList(rules: Rule[]): string {
   return `<section>
@@ -37,6 +38,7 @@ export function renderRulesList(rules: Rule[]): string {
     </li>`)
       .join('')}
   </ul>
+  ${contextualHelp('rules')}
 </section>`;
 }
 
@@ -110,12 +112,22 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
         Save changes
       </button>
       <button type="submit" name="intent" value="save_and_rerun"
-              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+              onclick="var f=this.form; if(!f) return; var n=document.getElementById('rerun-skeleton'); if(n) n.style.display='block'; this.setAttribute('disabled','true'); this.textContent='Updating flags…';">
         Save &amp; update flags now
       </button>
       <a href="/rules/${encodeURIComponent(rule.rule_key)}/history" class="ml-auto text-sm text-blue-600 hover:underline">Previous versions</a>
     </div>
   </form>
+  <div id="rerun-skeleton" class="mt-4 space-y-3" style="display:none" aria-live="polite">
+    <div class="rounded-md border border-blue-100 bg-blue-50 p-4 space-y-2">
+      <div class="ga-shimmer h-4 w-3/5"></div>
+      <div class="ga-shimmer h-3 w-4/5"></div>
+      <div class="ga-shimmer h-3 w-2/5"></div>
+    </div>
+    <p class="text-xs text-gray-500 text-center">Re-checking notes against the new rule — this usually takes a few seconds.</p>
+  </div>
+  ${contextualHelp('rule-edit')}
 </section>`;
 }
 
@@ -163,7 +175,10 @@ function renderConfigFields(ruleKey: string, config: Record<string, unknown>): s
  */
 function previewHxAttrs(ruleKey: string): string {
   const url = `/rules/${encodeURIComponent(ruleKey)}/preview-impact`;
-  return `hx-get="${url}" hx-target="#impact-preview" hx-swap="outerHTML" hx-trigger="input changed delay:400ms" hx-include="closest form"`;
+  // `hx-indicator` points at a shimmer sibling inside #impact-preview so the
+  // existing estimate stays visible (dimmed) while the new one loads —
+  // preventing layout jitter on every slider tick.
+  return `hx-get="${url}" hx-target="#impact-preview" hx-swap="outerHTML" hx-trigger="input changed delay:400ms" hx-include="closest form" hx-indicator="#impact-preview"`;
 }
 
 /**
@@ -183,9 +198,10 @@ export function renderImpactPreview(ruleKey: string, impact: ImpactPreview | nul
   const pct = impact.total_in_window > 0
     ? ((impact.count / impact.total_in_window) * 100).toFixed(1)
     : '0.0';
-  return `<div id="impact-preview" class="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+  return `<div id="impact-preview" class="relative rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 transition-opacity" data-dim-while-loading>
     <div class="font-medium">At this setting, <span class="tnum">${impact.count}</span> of <span class="tnum">${impact.total_in_window}</span> notes (${pct}%) would be flagged</div>
     <p class="mt-1 text-xs text-blue-800">Preview covers ${escapeHtml(impact.window_start)} to ${escapeHtml(impact.window_end)}. Estimates update as you change thresholds. Click <strong>Save &amp; update flags now</strong> to apply.</p>
+    <span class="ga-indicator absolute top-3 right-3 text-xs text-blue-700" data-inline aria-live="polite">Updating estimate…</span>
   </div>`;
 }
 

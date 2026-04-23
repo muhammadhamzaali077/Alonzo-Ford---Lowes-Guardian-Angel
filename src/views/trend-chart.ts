@@ -56,14 +56,34 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
   const baseline = `<line x1="${paddingLeft}" y1="${yFor(0)}" x2="${paddingLeft + chartW}" y2="${yFor(0)}" stroke="#d1d5db" stroke-width="1"/>
   <text x="${paddingLeft - 8}" y="${yFor(0) + 4}" text-anchor="end" font-size="11" fill="#6b7280">0%</text>`;
 
-  // Data lines + legend
+  // Data lines. Each line gets its own <g> with:
+  //   - the path itself (unstyled pointer-events: none so it can't steal hover)
+  //   - per-point hoverable <circle> with SVG <title> for native tooltips
+  //   - the circle is clickable and navigates to /location/:id (T119
+  //     click-to-scope) — server-side nav, no JS handler needed.
   const paths = series
     .map((s, idx) => {
       const color = LINE_COLORS[idx % LINE_COLORS.length];
       const d = s.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${xFor(i).toFixed(1)},${yFor(p.pct).toFixed(1)}`)
         .join(' ');
-      return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const locHref = `/location/${encodeURIComponent(s.location_id)}`;
+      const dots = s.points
+        .map((p, i) => {
+          const cx = xFor(i).toFixed(1);
+          const cy = yFor(p.pct).toFixed(1);
+          const pct = Math.round(p.pct);
+          return `<a href="${locHref}" aria-label="${escapeHtml(s.location_name)} — ${pct}% compliance on ${escapeHtml(p.date)}">
+          <circle cx="${cx}" cy="${cy}" r="3.5" fill="${color}" opacity="0" class="ga-trend-dot" tabindex="0">
+            <title>${escapeHtml(s.location_name)} · ${escapeHtml(p.date)} · ${pct}% compliance</title>
+          </circle>
+        </a>`;
+        })
+        .join('');
+      return `<g>
+        <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>
+        ${dots}
+      </g>`;
     })
     .join('\n');
 
@@ -80,18 +100,28 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
     .map((l) => `<text x="${l.x}" y="${height - 12}" text-anchor="${l.anchor}" font-size="11" fill="#6b7280">${escapeHtml(l.text)}</text>`)
     .join('\n');
 
-  // Legend below chart
+  // Legend below chart — each entry is a link to the corresponding location
+  // so users can get to the drill-down from the chart label too.
   const legend = series
     .map((s, idx) => {
       const color = LINE_COLORS[idx % LINE_COLORS.length];
-      return `<li class="inline-flex items-center gap-1.5">
-      <span class="inline-block w-3 h-[2px]" style="background:${color}"></span>
-      <span>${escapeHtml(s.location_name)}</span>
+      return `<li>
+      <a href="/location/${encodeURIComponent(s.location_id)}"
+         class="inline-flex items-center gap-1.5 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
+        <span class="inline-block w-3 h-[2px]" style="background:${color}"></span>
+        <span>${escapeHtml(s.location_name)}</span>
+      </a>
     </li>`;
     })
     .join('');
 
   const svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Compliance trend by location">
+  <style>
+    .ga-trend-dot { transition: opacity 150ms ease-in-out; cursor: pointer; }
+    .ga-trend-dot:hover, .ga-trend-dot:focus { opacity: 1 !important; }
+    svg:hover .ga-trend-dot { opacity: 0.35; }
+    @media (prefers-reduced-motion: reduce) { .ga-trend-dot { transition: none; } }
+  </style>
   ${gridLines}
   ${baseline}
   ${paths}
@@ -101,5 +131,6 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
   return `<div class="space-y-3">
     <div>${svg}</div>
     <ul class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">${legend}</ul>
+    <p class="text-xs text-gray-500">Tip: hover a point to see the date and compliance percentage, click to open that location.</p>
   </div>`;
 }

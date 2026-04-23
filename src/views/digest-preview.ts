@@ -8,6 +8,7 @@
 
 import type { RenderedDigest } from '../digest/render.js';
 import { escapeHtml } from './layout.js';
+import { contextualHelp } from './contextual-help.js';
 
 export interface DigestPreviewViewData {
   digests: RenderedDigest[];
@@ -43,23 +44,51 @@ export function renderDigestPreview(data: DigestPreviewViewData): string {
   <div class="mt-6 space-y-4">
     ${data.digests.map(renderEnvelopeCard).join('')}
   </div>
+  ${contextualHelp('digest')}
 </section>`;
 }
 
 function renderEnvelopeCard(digest: RenderedDigest): string {
+  // T121 — Gmail-style frame. The card now reads like a single email open
+  // in Gmail's reading pane: avatar + name + timestamp header, subject
+  // line as a bold title, recipient row with a "To" pill, and the
+  // rendered email body below. Purely visual — no behavior change.
+  const fromLabel = 'Guardian Angel <digest@lowesguardianangel.com>';
+  const recipient = digest.recipient_email;
+  const avatarInitial = (recipient.trim()[0] || 'G').toUpperCase();
+  const sentStamp = 'Monday, 8:00 AM';
   return `<article class="bg-white border border-gray-200 rounded-md overflow-hidden">
-  <div class="px-5 py-3 border-b border-gray-200 bg-gray-50">
-    <dl class="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
-      <dt class="text-gray-500">To</dt>
-      <dd class="text-gray-900 font-medium">${escapeHtml(digest.recipient_email)}</dd>
-      <dt class="text-gray-500">Scope</dt>
-      <dd class="text-gray-900">${escapeHtml(digest.scope_label)}</dd>
-      <dt class="text-gray-500">Subject</dt>
-      <dd class="text-gray-900">${escapeHtml(digest.subject)}</dd>
-    </dl>
+  <header class="px-5 py-3 border-b border-gray-200 bg-white">
+    <h3 class="text-base font-semibold text-gray-900 leading-snug">${escapeHtml(digest.subject)}</h3>
+    <div class="mt-2 flex items-start gap-3">
+      <div class="shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-medium flex items-center justify-center" aria-hidden="true">GA</div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <span class="text-sm font-medium text-gray-900 truncate">Guardian Angel</span>
+          <span class="text-xs text-gray-500 tnum shrink-0">${escapeHtml(sentStamp)}</span>
+        </div>
+        <div class="mt-0.5 text-xs text-gray-500 truncate">${escapeHtml(fromLabel)}</div>
+        <div class="mt-1 flex items-center gap-1.5 text-xs text-gray-600">
+          <span class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-600">To</span>
+          <span class="truncate">${escapeHtml(recipient)}</span>
+          <span class="shrink-0 text-gray-400">·</span>
+          <span class="truncate">${escapeHtml(digest.scope_label)}</span>
+        </div>
+      </div>
+      <span class="shrink-0 hidden sm:inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800" aria-label="This is a preview">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1"></span>Preview
+      </span>
+    </div>
+  </header>
+  <div class="px-5 pb-5 pt-4 bg-[#fafafa]">
+    <div class="rounded-md bg-white border border-gray-200 shadow-sm overflow-hidden">
+      ${digest.html}
+    </div>
   </div>
-  <div class="p-0">
-    ${digest.html}
-  </div>
+  <footer class="px-5 py-2 border-t border-gray-200 bg-white text-xs text-gray-500 flex items-center gap-4">
+    <span class="inline-flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l7 5 7-5M3 6l7 5 7-5"/></svg>Preview only — not sent.</span>
+    <span class="text-gray-400">|</span>
+    <span>Recipient: ${escapeHtml(recipient)}</span>
+  </footer>
 </article>`;
 }

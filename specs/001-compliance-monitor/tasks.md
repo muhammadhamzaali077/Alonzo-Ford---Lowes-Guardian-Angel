@@ -421,12 +421,12 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 3.
 
 ### Tier 2 — polish (auto-proceed after Tier 1 approval)
 
-- [ ] T117 Skeleton loaders + `hx-indicator` shimmer utility. Applies to re-run, search, upload.
-- [ ] T118 Keyboard shortcuts (`/` search, `g d` dashboard, `g r` rules, `Esc` closes disclosures) + `?` cheat-sheet disclosure. Inline script in `layout.ts`.
-- [ ] T119 Interactive trend chart — SVG `<title>` hover tooltips + click-to-scope. `src/views/trend-chart.ts`.
-- [ ] T120 Filter chips on dashboard (clickable severity / shift / location pills that toggle query params). `src/views/dashboard.ts`.
-- [ ] T121 Gmail-style frame on digest preview envelopes. `src/views/digest-preview.ts`.
-- [ ] T122 Inline contextual help `<details>` on each primary screen. Help copy map per view file.
+- [X] T117 Skeleton loaders + `hx-indicator` shimmer utility. Applies to re-run, search, upload.
+- [X] T118 Keyboard shortcuts (`/` search, `g d` dashboard, `g r` rules, `Esc` closes disclosures) + `?` cheat-sheet disclosure. Inline script in `layout.ts`. Also added `g s` → Settings.
+- [X] T119 Interactive trend chart — SVG `<title>` hover tooltips + click-to-scope. `src/views/trend-chart.ts`. Per-point circles are anchor-wrapped, so click-to-scope is server-side nav (no JS handler).
+- [X] T120 Filter chips on dashboard (clickable severity / shift / location pills that toggle query params). `src/views/dashboard.ts`. Shift dimension accepted in query string but not yet filtered at the query level — see Tier 4 punch list.
+- [X] T121 Gmail-style frame on digest preview envelopes. `src/views/digest-preview.ts`.
+- [X] T122 Inline contextual help `<details>` on each primary screen. Help copy map per view file. New `src/views/contextual-help.ts`.
 
 ### Tier 3 — approved, post Tier 2
 
@@ -442,4 +442,22 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 3.
 - Modal drawers.
 - JS charting library.
 - Sound effects.
+
+### Tier 4 — punch list (spotted during Tier 2 build)
+
+These are small UX issues / inconsistencies observed while implementing T117–T122. Captured here so they don't get rediscovered during the demo. None are blockers.
+
+- [ ] T127 **Shift filter doesn't actually filter.** `DashboardFilters.shift` is accepted from query string and highlighted in the chip bar (T120), but the `getLocationAggregates` query ignores it — the flag-aggregation subselect has no `shift_name` join. Fix: filter flags by the underlying t_log's shift_name and re-aggregate. Scope: `src/db/queries/dashboard.ts` getLocationAggregates + getOverallCounts.
+- [ ] T128 **Severity chip + old severity radio group are redundant.** `renderChipBar` (top of dashboard) and the `Severity` radio group inside `renderFilter`'s disclosure control the same query param. Keep one. Likely the right move is drop the severity radios from inside the disclosure and keep date-range as the only disclosure control.
+- [ ] T129 **Dashboard "Locations this week" heading is misleading when window != 7d.** The heading hard-codes "this week" but the filter chip can choose Last 30 days / This week / All time. Rename to match `data.window.label`.
+- [ ] T130 **Sparkline widths drift at breakpoints.** Inline SVG sparklines use a fixed viewBox (84×20) rendered at `hidden sm:inline` in a flex row; on tablet widths the counts column can wrap underneath instead of staying right-aligned. Pin the counts column width or switch to `grid-cols-[1fr_auto_auto]`.
+- [ ] T131 **Contextual-help copy duplicates itself.** Some help paragraphs (`location`, `angel`) restate what the section heading already says. Trim to 1–2 paragraphs max per screen — current ones are verbose.
+- [ ] T132 **Keyboard shortcut `g s` → `/admin/org` 403s for non-admins.** Settings is admin-only; the shortcut should resolve the right landing page by role or be gated off entirely for managers/leadership. Scope: `layout.ts` renderShortcutsScript, or add role-aware shortcut rendering.
+- [ ] T133 **Re-run skeleton persists if form submit fails client-side.** The inline `onclick` on the rerun button shows the skeleton unconditionally. If the browser blocks the submit (e.g., validation), the user sees a stuck skeleton. Wrap in a `form.addEventListener('submit', ..., { once: true })` instead, triggered only on successful submission.
+- [ ] T134 **Welcome panel is only on `/`, not on drill-down pages on first visit.** If Alonzo's first-ever deep link is `/location/LOC002`, he never sees the welcome. Either surface a one-line "first-time here?" hint elsewhere, or make the panel trigger on any authenticated page until dismissed.
+- [ ] T135 **Trend-chart dot click target is 3.5 px — too small for touch.** For mouse it's fine (hover grows opacity). For mobile/tablet increase the hit area via an invisible `<circle r=12 fill=transparent>` overlay per point, keeping the visible dot at 3.5.
+- [ ] T136 **Digest preview "Monday, 8:00 AM" timestamp is a hardcoded string.** If the demo runs on a Tuesday, it's a tiny credibility break. Either derive from `digest.generated_at` or make it present-tense ("Preview · just now").
+- [ ] T137 **`?` help overlay isn't announced to screen readers.** `role="dialog"` + `aria-modal="false"` is correct for non-blocking, but there's no focus-trap or return-focus-on-close. Low priority for demo; should be tightened before production auth users touch it.
+- [ ] T138 **Filter-chip "Clear" link returns to bare `/`.** It drops the `window=` param too, resetting the date range. Users toggling severity probably didn't mean to also reset the window. Preserve `window` through Clear.
+- [ ] T139 **Search indicator skeleton doesn't hide when results come back empty.** The `hx-indicator` flips off on response received, but the visible "No notes match" then sits below three phantom shimmer rows for one frame. Ensure the indicator fully detaches or swap target includes it.
 

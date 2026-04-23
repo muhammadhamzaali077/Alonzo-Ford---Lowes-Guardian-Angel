@@ -4,12 +4,14 @@
 import type { UploadResult } from '../admin/upload.js';
 import { escapeHtml } from './layout.js';
 import { renderSettingsShell } from './admin-org.js';
+import { contextualHelp } from './contextual-help.js';
 
 export function renderUploadPage(result?: UploadResult): string {
   const body = `<h2 class="text-lg font-medium text-gray-900">Upload Therap export</h2>
   <p class="mt-1 text-sm text-gray-600">Upload an Excel or CSV T-Log export from Therap. Each row becomes a note in Guardian Angel.</p>
 
-  <form method="post" action="/admin/upload" enctype="multipart/form-data" class="mt-6">
+  <form method="post" action="/admin/upload" enctype="multipart/form-data" class="mt-6"
+        onsubmit="var s=document.getElementById('upload-skeleton'); if(s) s.style.display='block'; var b=this.querySelector('button[type=submit]'); if(b){b.setAttribute('disabled','true'); b.textContent='Uploading…';}">
     <label for="upload-file" class="block border-2 border-dashed border-gray-300 rounded-md p-8 text-center cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-600">
       <svg class="mx-auto w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v12"/>
@@ -27,7 +29,18 @@ export function renderUploadPage(result?: UploadResult): string {
     </div>
   </form>
 
-  ${result ? renderUploadSummary(result) : renderEmptyHint()}`;
+  <div id="upload-skeleton" class="mt-6 space-y-2" style="display:none" aria-live="polite">
+    <div class="rounded-md border border-gray-200 bg-white p-4 space-y-2">
+      <div class="ga-shimmer h-4 w-2/5"></div>
+      <div class="ga-shimmer h-3 w-3/5"></div>
+      <div class="ga-shimmer h-3 w-4/5"></div>
+      <div class="ga-shimmer h-3 w-2/5"></div>
+    </div>
+    <p class="text-xs text-gray-500 text-center">Reading the export and running the flag checks — hang on a second.</p>
+  </div>
+
+  ${result ? renderUploadSummary(result) : renderEmptyHint()}
+  ${contextualHelp('upload')}`;
   return renderSettingsShell('upload', body);
 }
 
