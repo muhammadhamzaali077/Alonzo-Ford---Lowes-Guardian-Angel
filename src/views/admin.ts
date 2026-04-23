@@ -12,8 +12,8 @@ export function renderUploadPage(result?: UploadResult): string {
 
   <form method="post" action="/admin/upload" enctype="multipart/form-data" class="mt-6"
         onsubmit="var s=document.getElementById('upload-skeleton'); if(s) s.style.display='block'; var b=this.querySelector('button[type=submit]'); if(b){b.setAttribute('disabled','true'); b.textContent='Uploading…';}">
-    <label for="upload-file" class="block border-2 border-dashed border-gray-300 rounded-md p-8 text-center cursor-pointer hover:bg-gray-50 focus-within:ring-2 focus-within:ring-blue-600">
-      <svg class="mx-auto w-10 h-10 ga-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+    <label for="upload-file" class="block ga-surface-cream p-8 text-center cursor-pointer ga-cream-row-hover focus-within:ga-focus" style="border-style: dashed; border-width: 2px; border-color: var(--ga-cream-dim);">
+      <svg class="mx-auto w-10 h-10" style="color: var(--ga-text-on-light-subtle);" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v12"/>
       </svg>
       <p class="mt-3 text-sm font-medium ga-text-strong">Drop a Therap Excel export here, or click to browse</p>
@@ -28,7 +28,7 @@ export function renderUploadPage(result?: UploadResult): string {
   </form>
 
   <div id="upload-skeleton" class="mt-6 space-y-2" style="display:none" aria-live="polite">
-    <div class="rounded-md border border-gray-200 bg-white p-4 space-y-2">
+    <div class="ga-surface-cream p-4 space-y-2">
       <div class="ga-shimmer h-4 w-2/5"></div>
       <div class="ga-shimmer h-3 w-3/5"></div>
       <div class="ga-shimmer h-3 w-4/5"></div>
@@ -48,7 +48,7 @@ function renderEmptyHint(): string {
 
 export function renderUploadSummary(r: UploadResult): string {
   if (r.fatal_error) {
-    return `<div class="mt-6 bg-white border border-red-200 rounded-md p-5">
+    return `<div class="mt-6 ga-surface-cream p-5" style="border-left: 4px solid var(--ga-red);">
   <h2 class="text-lg font-medium ga-text-strong">We couldn't process this file</h2>
   <p class="mt-2 text-sm ga-text">${escapeHtml(r.fatal_error)}</p>
 </div>`;
@@ -67,12 +67,12 @@ export function renderUploadSummary(r: UploadResult): string {
     r.skipped.length === 0
       ? ''
       : `<details class="mt-4" open>
-  <summary class="cursor-pointer text-sm font-medium ga-text-strong focus:outline-none focus:ring-2 focus:ring-blue-600 rounded inline-block py-1 -my-1">Skipped rows (${r.skipped.length})</summary>
-  <ul class="mt-2 divide-y divide-gray-100 text-sm ga-text border-t border-gray-200">
+  <summary class="cursor-pointer text-sm font-medium ga-text-strong ga-focus rounded inline-block py-1 -my-1">Skipped rows (${r.skipped.length})</summary>
+  <ul class="mt-2 text-sm ga-text" style="border-top: 1px solid var(--ga-cream-dim);">
     ${r.skipped
       .slice(0, 200)
       .map(
-        (s) => `<li class="py-2">
+        (s) => `<li class="py-2" style="border-bottom: 1px solid var(--ga-cream-dim);">
       <span class="font-medium tnum">Row ${s.row}:</span> ${escapeHtml(s.reason)}
     </li>`,
       )
@@ -81,15 +81,15 @@ export function renderUploadSummary(r: UploadResult): string {
   </ul>
 </details>`;
 
-  return `<div class="mt-6 bg-white border border-gray-200 rounded-md p-5">
+  return `<div class="mt-6 ga-surface-cream p-5">
   <h2 class="text-lg font-medium ga-text-strong">Upload summary</h2>
   <p class="mt-1 text-sm ga-text">File: <span class="font-medium ga-text-strong">${escapeHtml(r.filename)}</span></p>
   <p class="mt-3 text-sm ga-text-strong">${escapeHtml(ingestSentence)}</p>
   ${flagsSentence}
   ${skippedDetails}
-  <div class="mt-4 pt-4 border-t border-gray-200 flex items-center gap-4">
-    <a href="/" class="text-sm text-blue-600 hover:underline">Back to dashboard →</a>
-    <a href="/admin/upload" class="text-sm ga-text hover:text-blue-600">Upload another file</a>
+  <div class="mt-4 pt-4 flex items-center gap-4" style="border-top: 1px solid var(--ga-cream-dim);">
+    <a href="/" class="ga-link text-sm">Back to dashboard →</a>
+    <a href="/admin/upload" class="ga-link text-sm">Upload another file</a>
   </div>
 </div>`;
 }

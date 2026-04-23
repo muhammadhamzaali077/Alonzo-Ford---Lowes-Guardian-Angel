@@ -123,7 +123,7 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
       const colorVar = LINE_COLOR_VARS[idx % LINE_COLOR_VARS.length];
       return `<li>
       <a href="/location/${encodeURIComponent(s.location_id)}"
-         class="ga-trend-legend ga-trend-legend-${idx} inline-flex items-center gap-2 ga-text-muted hover:text-[color:var(--ga-blue-strong)] ga-transition focus:outline-none focus:ring-2 focus:ring-blue-600 rounded px-1 -mx-1 py-0.5">
+         class="ga-trend-legend ga-trend-legend-${idx} inline-flex items-center gap-2 ga-text-muted hover:text-[color:var(--ga-gold-bright)] ga-transition ga-focus rounded px-1 -mx-1 py-0.5">
         <span class="inline-block w-3.5 h-2 rounded-sm" style="background: var(${colorVar})" aria-hidden="true"></span>
         <span>${escapeHtml(s.location_name)}</span>
       </a>

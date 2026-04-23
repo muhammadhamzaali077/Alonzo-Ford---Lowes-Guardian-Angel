@@ -39,18 +39,23 @@ const SECTIONS: Array<{ key: AdminSection; label: string; href: string }> = [
 ];
 
 export function renderSettingsShell(active: AdminSection, body: string): string {
-  const sidebarLinks = SECTIONS.map(
-    (s) => `<a href="${s.href}" class="block px-3 py-2 min-h-[44px] rounded-md text-sm ${
-      active === s.key ? 'bg-blue-50 text-blue-700 font-medium' : 'ga-text hover:bg-gray-50'
-    }">${escapeHtml(s.label)}</a>`,
-  ).join('');
+  // Sidebar nav: cream surface on dark page; active section gets a soft
+  // gold wash + gold-bright text; inactive items use the on-light text
+  // tier (cream surface cascades that automatically).
+  const sidebarLinks = SECTIONS.map((s) => {
+    const isActive = active === s.key;
+    const activeStyle = isActive
+      ? 'background-color: var(--ga-gold-bg); color: var(--ga-gold-dim); font-weight: 600;'
+      : '';
+    return `<a href="${s.href}" class="block px-3 py-2 min-h-[44px] rounded-md text-sm ${isActive ? '' : 'ga-cream-row-hover'}" style="${activeStyle}">${escapeHtml(s.label)}</a>`;
+  }).join('');
 
   return `<section>
   <h1 class="text-2xl font-semibold ga-text-strong">Settings</h1>
   <p class="mt-1 text-sm ga-text">Manage the org data that drives flagging and the weekly email.</p>
   <div class="mt-6 grid grid-cols-1 md:grid-cols-[16rem_1fr] gap-6">
     <aside>
-      <nav class="bg-white border border-gray-200 rounded-md p-2 space-y-1" aria-label="Settings sections">
+      <nav class="ga-surface-cream p-2 space-y-1" aria-label="Settings sections">
         ${sidebarLinks}
       </nav>
     </aside>
@@ -69,7 +74,7 @@ export function renderSettingsHub(counts: {
   locations: number; angels: number; individuals: number; managers: number;
   shift_schedules: number; recipients: number; ops: number;
 }): string {
-  const body = `<div class="bg-white border border-gray-200 rounded-md p-5">
+  const body = `<div class="ga-surface-cream p-5">
   <h2 class="text-lg font-medium ga-text-strong">Overview</h2>
   <p class="mt-1 text-sm ga-text">Current counts. Pick a section on the left to edit.</p>
   <dl class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
@@ -85,7 +90,8 @@ export function renderSettingsHub(counts: {
 }
 
 function countTile(label: string, n: number): string {
-  return `<div class="rounded-md border border-gray-200 p-4">
+  // Inner tile sits ON cream, so use cream-soft for a subtle inset.
+  return `<div class="rounded-md p-4" style="background-color: var(--ga-cream-soft); border: 1px solid var(--ga-cream-dim);">
   <dt class="text-xs ga-text">${escapeHtml(label)}</dt>
   <dd class="mt-1 text-2xl font-semibold tnum ga-text-strong">${n}</dd>
 </div>`;
@@ -98,30 +104,33 @@ function countTile(label: string, n: number): string {
 function entityHeader(label: string, addHref: string): string {
   return `<div class="flex items-center justify-between gap-4 flex-wrap">
   <h2 class="text-lg font-medium ga-text-strong">${escapeHtml(label)}</h2>
-  <a href="${addHref}" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">Add</a>
+  <a href="${addHref}" class="ga-btn ga-btn-primary">Add</a>
 </div>`;
 }
 
 function rowActions(editHref: string, deleteHref?: string): string {
+  // Edit + Delete sit inside cream list rows. Edit uses the gold link
+  // (cream cascade drops it to gold-dim for contrast). Delete uses a
+  // darker severity red so it stays distinguishable on cream.
   const delBtn = deleteHref
-    ? `<a href="${deleteHref}" class="text-sm text-red-700 hover:underline py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Delete</a>`
+    ? `<a href="${deleteHref}" class="text-sm py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center" style="color: var(--ga-red-strong);">Delete</a>`
     : '';
   return `<div class="flex items-center gap-3 shrink-0">
-  <a href="${editHref}" class="text-sm text-blue-600 hover:underline py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Edit</a>
+  <a href="${editHref}" class="ga-link text-sm py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Edit</a>
   ${delBtn}
 </div>`;
 }
 
 function emptyState(message: string): string {
-  return `<div class="bg-white border border-gray-200 rounded-md p-5 text-sm ga-text-muted">${escapeHtml(message)}</div>`;
+  return `<div class="ga-surface-cream p-5 text-sm ga-text-muted">${escapeHtml(message)}</div>`;
 }
 
 function renderForm(action: string, fields: string, submitLabel: string): string {
   return `<form method="post" action="${action}" class="space-y-4">
   ${fields}
-  <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
-    <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">${escapeHtml(submitLabel)}</button>
-    <a href="/admin/org" class="text-sm ga-text hover:text-blue-600">Cancel</a>
+  <div class="flex items-center gap-3 pt-4" style="border-top: 1px solid var(--ga-cream-dim);">
+    <button type="submit" class="ga-btn ga-btn-primary">${escapeHtml(submitLabel)}</button>
+    <a href="/admin/org" class="ga-link text-sm">Cancel</a>
   </div>
 </form>`;
 }
@@ -129,10 +138,14 @@ function renderForm(action: string, fields: string, submitLabel: string): string
 function textInput(name: string, label: string, value: string, opts: { required?: boolean; placeholder?: string } = {}): string {
   const req = opts.required ? 'required' : '';
   const ph = opts.placeholder ?? '';
+  // Form lives inside a cream surface, so use a light-themed input
+  // (cream-soft bg, on-light text, gold focus ring) instead of the
+  // dark .ga-input which would be jarring on cream.
+  const inputStyle = 'background-color: var(--ga-cream-soft); border: 1px solid var(--ga-cream-dim); color: var(--ga-text-on-light);';
   return `<div>
   <label for="f-${name}" class="block text-sm font-medium ga-text-strong">${escapeHtml(label)}</label>
   <input id="f-${name}" name="${name}" type="text" value="${escapeHtml(value)}" placeholder="${escapeHtml(ph)}" ${req}
-         class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+         class="mt-1 block w-full rounded-md px-3 py-2 text-base ga-focus" style="${inputStyle}">
 </div>`;
 }
 
@@ -142,10 +155,11 @@ function selectInput(
   value: string,
   choices: Array<{ value: string; label: string }>,
 ): string {
+  const inputStyle = 'background-color: var(--ga-cream-soft); border: 1px solid var(--ga-cream-dim); color: var(--ga-text-on-light);';
   return `<div>
   <label for="f-${name}" class="block text-sm font-medium ga-text-strong">${escapeHtml(label)}</label>
   <select id="f-${name}" name="${name}"
-          class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+          class="mt-1 block w-full rounded-md px-3 py-2 text-base ga-focus" style="${inputStyle}">
     ${choices.map((c) => `<option value="${escapeHtml(c.value)}" ${c.value === value ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('')}
   </select>
 </div>`;
@@ -158,7 +172,7 @@ function selectInput(
 export function renderLocationsList(locations: Location[], managers: Manager[]): string {
   const mgrName = (id: string | null) => managers.find((m) => m.id === id)?.name ?? '—';
   const body = `${entityHeader('Locations', '/admin/locations/new')}
-  ${locations.length === 0 ? emptyState('No locations yet. Add one to start.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${locations.length === 0 ? emptyState('No locations yet. Add one to start.') : `<ul class="mt-4 ga-surface-cream">
     ${locations.map((l) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(l.name)}</div>
@@ -197,7 +211,7 @@ export function renderLocationForm(
   const action = isNew ? '/admin/locations' : `/admin/locations/${encodeURIComponent(id)}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add location' : 'Edit location'}</h2>
   <p class="mt-1 text-sm ga-text">The Location ID matches the Therap program ID.</p>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create location' : 'Save changes')}
   </div>`;
   return renderSettingsShell('locations', body);
@@ -209,11 +223,11 @@ export function renderLocationDeleteConfirm(
 ): string {
   const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate location</h2>
   <p class="mt-1 text-sm ga-text">This location will be marked inactive. Historical notes and flags stay as-is.</p>
-  <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5" style="border-left: 4px solid var(--ga-amber);">
     <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(location.name)}</span> has ${counts.angels} angel${counts.angels === 1 ? '' : 's'}, ${counts.individuals} individual${counts.individuals === 1 ? '' : 's'}, and ${counts.tlogs} note${counts.tlogs === 1 ? '' : 's'}. Deactivating keeps every note and flag in place; the location just stops appearing in drop-downs and new dashboards.</p>
     <form method="post" action="/admin/locations/${encodeURIComponent(location.id)}/delete" class="mt-4 flex items-center gap-3">
-      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600">Deactivate location</button>
-      <a href="/admin/locations" class="text-sm ga-text hover:text-blue-600">Cancel</a>
+      <button type="submit" class="ga-btn ga-btn-danger">Deactivate location</button>
+      <a href="/admin/locations" class="ga-link text-sm">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('locations', body);
@@ -226,7 +240,7 @@ export function renderLocationDeleteConfirm(
 export function renderAngelsList(angels: Angel[], locations: Location[]): string {
   const locName = (id: string | null) => locations.find((l) => l.id === id)?.name ?? '—';
   const body = `${entityHeader('Angels', '/admin/angels/new')}
-  ${angels.length === 0 ? emptyState('No angels yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${angels.length === 0 ? emptyState('No angels yet.') : `<ul class="mt-4 ga-surface-cream">
     ${angels.map((a) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(a.name)}</div>
@@ -260,7 +274,7 @@ export function renderAngelForm(angel: Angel | null, locations: Location[]): str
   `;
   const action = isNew ? '/admin/angels' : `/admin/angels/${encodeURIComponent(id)}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add angel' : 'Edit angel'}</h2>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create angel' : 'Save changes')}
   </div>`;
   return renderSettingsShell('angels', body);
@@ -268,11 +282,11 @@ export function renderAngelForm(angel: Angel | null, locations: Location[]): str
 
 export function renderAngelDeleteConfirm(angel: Angel, noteCount: number): string {
   const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate angel</h2>
-  <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5" style="border-left: 4px solid var(--ga-amber);">
     <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(angel.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating marks the angel as inactive; the notes stay.</p>
     <form method="post" action="/admin/angels/${encodeURIComponent(angel.id)}/delete" class="mt-4 flex items-center gap-3">
-      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700">Deactivate angel</button>
-      <a href="/admin/angels" class="text-sm ga-text hover:text-blue-600">Cancel</a>
+      <button type="submit" class="ga-btn ga-btn-danger">Deactivate angel</button>
+      <a href="/admin/angels" class="ga-link text-sm">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('angels', body);
@@ -285,7 +299,7 @@ export function renderAngelDeleteConfirm(angel: Angel, noteCount: number): strin
 export function renderIndividualsList(individuals: Individual[], locations: Location[]): string {
   const locName = (id: string | null) => locations.find((l) => l.id === id)?.name ?? '—';
   const body = `${entityHeader('Individuals', '/admin/individuals/new')}
-  ${individuals.length === 0 ? emptyState('No individuals yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${individuals.length === 0 ? emptyState('No individuals yet.') : `<ul class="mt-4 ga-surface-cream">
     ${individuals.map((i) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(i.name)}</div>
@@ -313,7 +327,7 @@ export function renderIndividualForm(individual: Individual | null, locations: L
   `;
   const action = isNew ? '/admin/individuals' : `/admin/individuals/${encodeURIComponent(id)}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add individual' : 'Edit individual'}</h2>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create individual' : 'Save changes')}
   </div>`;
   return renderSettingsShell('individuals', body);
@@ -321,11 +335,11 @@ export function renderIndividualForm(individual: Individual | null, locations: L
 
 export function renderIndividualDeleteConfirm(individual: Individual, noteCount: number): string {
   const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate individual</h2>
-  <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5" style="border-left: 4px solid var(--ga-amber);">
     <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(individual.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating keeps the notes; the individual stops appearing in drop-downs.</p>
     <form method="post" action="/admin/individuals/${encodeURIComponent(individual.id)}/delete" class="mt-4 flex items-center gap-3">
-      <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700">Deactivate individual</button>
-      <a href="/admin/individuals" class="text-sm ga-text hover:text-blue-600">Cancel</a>
+      <button type="submit" class="ga-btn ga-btn-danger">Deactivate individual</button>
+      <a href="/admin/individuals" class="ga-link text-sm">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('individuals', body);
@@ -337,7 +351,7 @@ export function renderIndividualDeleteConfirm(individual: Individual, noteCount:
 
 export function renderManagersList(managers: Manager[]): string {
   const body = `${entityHeader('Managers', '/admin/managers/new')}
-  ${managers.length === 0 ? emptyState('No managers yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${managers.length === 0 ? emptyState('No managers yet.') : `<ul class="mt-4 ga-surface-cream">
     ${managers.map((m) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(m.name)}</div>
@@ -362,7 +376,7 @@ export function renderManagerForm(manager: Manager | null): string {
   `;
   const action = isNew ? '/admin/managers' : `/admin/managers/${encodeURIComponent(id)}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add manager' : 'Edit manager'}</h2>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create manager' : 'Save changes')}
   </div>`;
   return renderSettingsShell('managers', body);
@@ -375,7 +389,7 @@ export function renderManagerForm(manager: Manager | null): string {
 export function renderSchedulesList(rows: ShiftScheduleRow[]): string {
   const body = `${entityHeader('Shift schedules', '/admin/shift-schedules/new')}
   <p class="mt-1 text-sm ga-text">Each row is one expected shift pattern for an individual. Missing-note flags fire against these.</p>
-  ${rows.length === 0 ? emptyState('No shift schedules yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${rows.length === 0 ? emptyState('No shift schedules yet.') : `<ul class="mt-4 ga-surface-cream">
     ${rows.map((r) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(r.individual_name)} · ${escapeHtml(r.shift_name)}</div>
@@ -415,7 +429,7 @@ export function renderScheduleForm(
   `;
   const action = isNew ? '/admin/shift-schedules' : `/admin/shift-schedules/${idAttr}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add shift schedule' : 'Edit shift schedule'}</h2>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create schedule' : 'Save changes')}
   </div>`;
   return renderSettingsShell('shift_schedules', body);
@@ -437,7 +451,7 @@ export function renderRecipientsList(
 
   const body = `${entityHeader('Digest recipients', '/admin/recipients/new')}
   <p class="mt-1 text-sm ga-text">Each recipient gets a weekly compliance email scoped to their location(s).</p>
-  ${recipients.length === 0 ? emptyState('No recipients yet. Add someone to receive the weekly email.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${recipients.length === 0 ? emptyState('No recipients yet. Add someone to receive the weekly email.') : `<ul class="mt-4 ga-surface-cream">
     ${recipients.map((r) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
         <div class="text-sm font-medium ga-text-strong">${escapeHtml(r.email)}</div>
@@ -472,7 +486,7 @@ export function renderRecipientForm(
   const action = isNew ? '/admin/recipients' : `/admin/recipients/${recipient?.id}`;
   const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add recipient' : 'Edit recipient'}</h2>
   <p class="mt-1 text-sm ga-text">Delivery: Monday 08:00 ET. (Cadence is fixed in v1.)</p>
-  <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
+  <div class="mt-4 ga-surface-cream p-5">
     ${renderForm(action, fields, isNew ? 'Create recipient' : 'Save changes')}
   </div>`;
   return renderSettingsShell('recipients', body);
@@ -493,7 +507,7 @@ const OPS_CATEGORY_LABELS: Record<string, string> = {
 export function renderOpsNoticesList(notices: OpsNotice[]): string {
   const body = `<h2 class="text-lg font-medium ga-text-strong">System messages</h2>
   <p class="mt-1 text-sm ga-text">Operational notices from the last 50 events. Informational; no action required unless you see a pattern.</p>
-  ${notices.length === 0 ? emptyState('No system messages. Everything looks quiet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
+  ${notices.length === 0 ? emptyState('No system messages. Everything looks quiet.') : `<ul class="mt-4 ga-surface-cream">
     ${notices.map((n) => `<li class="px-5 py-4">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">

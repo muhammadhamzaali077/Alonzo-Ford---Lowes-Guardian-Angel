@@ -271,11 +271,11 @@ function renderDelta(p: TileProps): string {
     return `<span class="text-xs ga-text-muted" title="No change vs. prior period">— vs last period</span>`;
   }
   const isWorse = p.higherIsWorse ? diff > 0 : diff < 0;
-  const color = isWorse ? 'text-red-700' : 'text-green-700';
+  const colorVar = isWorse ? 'var(--ga-red-bright)' : 'var(--ga-green-bright)';
   const sign = diff > 0 ? '+' : '−';
   const mag = p.decimals && p.decimals > 0 ? Math.abs(diff).toFixed(p.decimals) : String(Math.round(Math.abs(diff)));
   const unit = p.unit ?? '';
-  return `<span class="text-xs font-medium ${color} tnum" title="Change vs. prior equal-length period">${sign}${escapeHtml(mag + unit)} vs last period</span>`;
+  return `<span class="text-xs font-medium tnum" style="color: ${colorVar};" title="Change vs. prior equal-length period">${sign}${escapeHtml(mag + unit)} vs last period</span>`;
 }
 
 function renderComplianceArrow(delta: number): string {
@@ -286,11 +286,11 @@ function renderComplianceArrow(delta: number): string {
     </svg>`;
   }
   if (delta > 0) {
-    return `<svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Up vs. last period">
+    return `<svg class="w-5 h-5" style="color: var(--ga-green-bright);" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Up vs. last period">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 16V4M5 9l5-5 5 5"/>
     </svg>`;
   }
-  return `<svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Down vs. last period">
+  return `<svg class="w-5 h-5" style="color: var(--ga-red-bright);" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Down vs. last period">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4v12M5 11l5 5 5-5"/>
   </svg>`;
 }

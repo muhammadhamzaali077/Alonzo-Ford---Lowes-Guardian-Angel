@@ -452,6 +452,19 @@ export const DESIGN_TOKENS_STYLE = `<style>
       color: var(--ga-text-strong);
     }
 
+    /* Destructive action — used for "Deactivate location/angel/etc." in
+       Settings. Saturated red on dark, lighter on hover. White text for
+       maximum contrast against the saturated severity. */
+    .ga-btn-danger {
+      background-color: var(--ga-red-strong);
+      color: #ffffff;
+      border-color: var(--ga-red-strong);
+    }
+    .ga-btn-danger:hover {
+      background-color: var(--ga-red);
+      border-color: var(--ga-red);
+    }
+
     /* Links — smooth underline animation. Uses gold accent. */
     .ga-link {
       color: var(--ga-gold);

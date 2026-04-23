@@ -42,11 +42,11 @@ export function renderSearchResults(q: string, hits: SearchHit[]): string {
   if (hits.length === 0) {
     return `<p class="text-sm ga-text-muted">No notes match "${escapeHtml(q)}".</p>`;
   }
-  return `<ul class="divide-y divide-gray-200 bg-white border border-gray-200 rounded-md">
+  return `<ul class="ga-surface-cream">
 ${hits
   .map(
     (h) => `<li>
-  <a href="/note/${encodeURIComponent(h.tlog_id)}/${encodeURIComponent(String(h.version))}" class="block px-5 py-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+  <a href="/note/${encodeURIComponent(h.tlog_id)}/${encodeURIComponent(String(h.version))}" class="block px-5 py-3 ga-cream-row-hover ga-focus">
     <div class="text-xs ga-text-muted">${escapeHtml(h.reported_date)} · ${escapeHtml(h.location_name)} · ${escapeHtml(h.angel_name ?? 'Unknown angel')} · ${escapeHtml(h.individual_name)}</div>
     <p class="mt-1 text-sm ga-text-strong">${escapeHtml(h.excerpt)}</p>
   </a>

@@ -105,9 +105,9 @@ export function renderBreadcrumb(items: BreadcrumbItem[]): string {
 <li aria-hidden="true" class="md:hidden shrink-0">›</li>
 <li class="md:hidden shrink-0">
   <details class="relative inline-block">
-    <summary class="cursor-pointer select-none px-2 py-1 -my-1 ga-text-subtle focus:outline-none focus:ring-2 focus:ring-blue-600 rounded" aria-label="Show intermediate levels">…</summary>
-    <div class="absolute left-0 top-full mt-1 min-w-[12rem] rounded-md border ga-surface shadow-sm py-1 z-10" style="border-color: var(--ga-border);">
-      ${middle.map((m) => `<a href="${escapeHtml(m.href ?? '#')}" class="block px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">${escapeHtml(m.label)}</a>`).join('')}
+    <summary class="cursor-pointer select-none px-2 py-1 -my-1 ga-text-subtle ga-focus rounded" aria-label="Show intermediate levels">…</summary>
+    <div class="absolute left-0 top-full mt-1 min-w-[12rem] rounded-md border ga-surface ga-shadow-sm py-1 z-10" style="border-color: var(--ga-border);">
+      ${middle.map((m) => `<a href="${escapeHtml(m.href ?? '#')}" class="block px-3 py-2 text-sm ga-text ga-focus" style="border-radius: var(--ga-radius-sm);" onmouseover="this.style.backgroundColor='var(--ga-surface-subtle)'" onmouseout="this.style.backgroundColor=''">${escapeHtml(m.label)}</a>`).join('')}
     </div>
   </details>
 </li>`;
