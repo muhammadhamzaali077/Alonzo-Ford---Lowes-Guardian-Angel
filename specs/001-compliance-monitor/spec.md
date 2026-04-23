@@ -229,3 +229,86 @@ Three scope-shaping questions raised during `/speckit.specify` were answered on 
 - **Q1 → A (per scheduled shift-individual)**: Missing-note flags fire at (individual, shift) granularity. See FR-005. Angel attribution is best-effort against a staffing roster; manager attribution is always to the location's manager at shift time.
 - **Q2 → C (hybrid)**: A deterministic similarity score is computed per ingested note against the angel's recent N notes and persisted on the T-Log record. The AI classifier receives the score as structured context. Elaina's editable "copy-paste" rule governs the escalation threshold and the wording the classifier reasons with. See FR-008 and FR-008a.
 - **Q3 → B (% of expected shifts with a non-red note)**: Single-axis metric — `submitted_not_red / expected`. Yellow counts as compliant. The same metric drives the trend line and the digest week-over-week line. See FR-014.
+
+---
+
+## Brand Redesign Requirements (amendment, 2026-04-23 — post-demo)
+
+**Source**: Direct client feedback from Alonzo Ford + LGA leadership during the 2026-04-23 live demo. Formally catalogued here so each redesign requirement has a single, testable home; acceptance criteria live alongside.
+
+These requirements SUPPLEMENT the functional requirements above — they do not alter any FR-0## behavior. They govern visual language and home-page interaction density. The "state auditor" aesthetic direction captured in the UI/UX Constraints block of `tasks.md` is retired (see that file's Decisions log for the override rationale).
+
+**REQ-1 — Complete visual redesign.** Every screen gets new visual treatment in navy + gold. Polish is not sufficient; full replacement is required.
+- **AC-1.1**: Every authenticated screen renders with `--ga-bg: #0a1532` as the page background (dark navy, not slate or light).
+- **AC-1.2**: Primary call-to-action buttons render with the gold accent (`--ga-gold: #e8b53c`); zero remaining `text-blue-*` / `bg-blue-*` Tailwind classes in shipped view code after the final sweep batch.
+
+**REQ-2 — Home page log stream.** The home page's primary content is a dense live stream of recent T-Log entries (newest first, color-coded by severity). Aggregate tiles (Red / Yellow / Missing / Compliance) and trend chart exist but sit below or beside the stream, not above it.
+- **AC-2.1**: The `/` route renders a log-stream region as the first scrollable block below the header + data-bar.
+- **AC-2.2**: Each stream row shows angel name, individual name, location name, relative timestamp, severity signal, and a truncated note preview (≥ 60 characters visible at desktop, ≥ 40 characters on 375px mobile before ellipsis).
+- **AC-2.3**: Stream renders **20–25 rows by default** (enriched 2026-04-23 evening). Sparse 8–10 row renders are insufficient — Alonzo explicitly asked to "see the work happening."
+- **AC-2.4**: Row vertical padding is reduced ~30% vs. the location-row baseline so density reads as log-like without sacrificing 44px touch targets at the anchor level.
+- **AC-2.5**: A "Show more" affordance at the bottom of the stream loads the next 25 rows in place via htmx (no full-page navigation). Target is `outerHTML` swap of the stream tail; the existing rows remain on screen during the swap.
+- **AC-2.6**: The stream header shows a "Showing X of Y" counter (e.g., "Showing 25 of 314 recent notes") so context doesn't drop off when scrolling.
+
+**REQ-3 — LGA brand color theme.** Navy surface + gold accent + cream/white text. Exact hex values derived from the LGA marketing site and client confirmation.
+- **AC-3.1**: `:root` tokens in `src/views/design-tokens-css.ts` include `--ga-bg`, `--ga-surface`, `--ga-surface-elevated`, `--ga-gold`, and `--ga-cream` with the values approved on 2026-04-23.
+- **AC-3.2**: WCAG AA contrast passes for every text-on-surface pairing used in chrome (ga-text, ga-text-strong, ga-text-muted on dark; ga-text-on-light variants on cream).
+
+**REQ-4 — LGA logo in header.** Official logo (angel wings + halo + wordmark) in the header, visibly branded without dominating.
+- **AC-4.1**: Logo renders via `<img src="/assets/lga-logo.png">` served from the static mount.
+- **AC-4.2**: Desktop header logo height is in the 56–64px range (enriched 2026-04-23 evening — original 32–40px range was too understated).
+- **AC-4.3**: Mobile (≤ 639px) header logo height is 44px (enriched 2026-04-23 evening — original 28px was too small).
+- **AC-4.4**: Header total height accommodates the logo without cramping; if the 56–64px logo pushes it past the existing `h-20`, the header grows to `h-22`..`h-24` accordingly.
+
+**REQ-5 — No page reloads on stateful UI interactions.** Filter chip toggles, severity switches, date range changes, rule-editor tabs — every stateful interaction updates in place via htmx.
+- **AC-5.1**: Clicking any filter chip, severity switch, or date-range preset fires an htmx request with `HX-Request: true`; the browser's navigation history does NOT record a full-page navigation.
+- **AC-5.2**: Every such action has an `hx-target` scoped to the result region only, not the full `<main>`.
+
+**REQ-6 — Remove version history UI from rule editor.** Underlying DB data preserved; only the UI entry points removed.
+- **AC-6.1**: The rendered DOM of `/rules/:key/edit` contains zero occurrences of "Previous versions", "Restore", or `href="/rules/:key/history"`.
+- **AC-6.2**: The rendered DOM of `/rules` (rule list) contains zero occurrences of "Previous versions" or `/history` links.
+- **AC-6.3**: The `rule_config` table still retains all version history; direct-URL GET of `/rules/:key/history` still renders (routes unchanged).
+
+**REQ-7 — Non-technical-user-friendly UI.** Visually engaging to an executive; not minimal-clinical.
+- **AC-7.1**: Plain-English labels throughout (language rules from the UI/UX Constraints block still apply — no "classifier", "pipeline", "JSON", etc.).
+- **AC-7.2**: Visual hierarchy on every page: clear page title (`ga-h1`), clear primary action, no wall-of-form pattern.
+
+**REQ-8 — Modern, realistic, colorful, bold.** Client's direct words. Premium + branded, not minimal + clinical.
+- **AC-8.1**: Severity palette is saturated (vivid red `#ef4444`, warm amber `#f59e0b`, vibrant green `#10b981`) — not desaturated clinical tones.
+- **AC-8.2**: Gold accent is present on every primary screen (CTAs, active nav, focus rings, link accents).
+- **AC-8.3**: Typography uses Inter (via Google Fonts CDN, authorized per the brand amendment) with tabular numerals enabled for numeric tabular alignment.
+
+**REQ-9 — Log stream auto-refreshes.** Home-page stream feels live without user intervention.
+- **AC-9.1**: The stream's outer container carries `hx-trigger="every 30s"`, `hx-get="/stream/latest"`, `hx-swap="outerHTML"`.
+- **AC-9.2**: Poll endpoint returns the updated stream fragment including the current "Showing X of Y" counter.
+- **AC-9.3**: In-place polling does not reset the user's scroll position or expanded "Show more" state.
+
+**REQ-10 — Location rows show flag breakdown instead of location type (new, 2026-04-23 evening).** On the home-page locations list, the secondary line shows active flag counts, not the "Group home" / "Day program" type label. Type labels remain in contexts where they aid orientation (drill-down page header, admin screens, digest envelope copy).
+- **AC-10.1**: On `/`, each row in "Locations this week" renders a secondary line of the form `"N red · N yellow · N missing"` (counts ≥ 0).
+- **AC-10.2**: When all three counts are zero, the secondary line reads "No flags this week" in a muted-green state (not "0 red · 0 yellow · 0 missing", which is noisy).
+- **AC-10.3**: Location type string ("Group home" / "Host home" / "Day program") does NOT appear anywhere on the home-page locations list.
+- **AC-10.4**: Location type string DOES appear in the drill-down page header (e.g., "Riverside Group Home · Group home"), the Settings › Locations admin list, and the digest preview scope-label copy.
+
+**REQ-11 — Background depth pattern (new, 2026-04-23 evening).** Flat navy reads "Tailwind dark mode default." Brand has more warmth — add a very subtle visual texture so the page feels designed.
+- **AC-11.1**: The `<body>` background renders a soft radial gradient from `#1a2547` (top-right) fading to `#0a1532` (bottom-left) via a `radial-gradient` CSS function on the body or a full-viewport pseudo-element.
+- **AC-11.2**: The gradient is `background-attachment: fixed` so it does not scroll with content (ambient light-source feel, not parallax decoration).
+- **AC-11.3**: Text-on-bg contrast for every existing readable element remains WCAG AA — the gradient's lightest point must not reduce legibility of any chrome text.
+- **AC-11.4**: Optional subtle grain (SVG data URI, 3–4% opacity) MAY layer over the gradient if the gradient alone reads too flat at review.
+- **AC-11.5**: No animation. No floating shapes. No particles. No "hero section" decoration. Nothing that competes with content. Nothing that feels crypto/startup/gaming.
+
+### Screens in scope for REQ-1 sweep
+
+1. Login page, 2. Home page (restructured per REQ-2), 3. Location drill-down, 4. Angel drill-down, 5. Individual drill-down, 6. Note detail, 7. Rules list, 8. Rule editor (with REQ-6 removals), 9. Digest preview, 10. Admin scenarios, 11. Admin locations / angels / individuals / managers / shift schedules / recipients, 12. Every mobile variant at 375px.
+
+### Out of scope for the redesign amendment
+
+- Adding new features beyond the visual + interaction shifts above.
+- Changing any backend logic, classifier behavior, or data model.
+- Changing URL structure or routing.
+- Changing authentication flow.
+- Changing demo data shape or counts.
+
+### Review gates
+
+- The redesign is executed as a batched migration (see `tasks.md` Phase 15). Human review sits between every batch — no batch auto-proceeds.
+- Batch 1.6 (this amendment's implementation scope) is its own review gate separate from Batch 1.5. Two review gates before Batch 2.

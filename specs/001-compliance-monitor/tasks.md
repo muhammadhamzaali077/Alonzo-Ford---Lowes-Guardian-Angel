@@ -8,6 +8,34 @@ Tasks are topologically ordered — do them top-to-bottom. Every task cites the 
 
 ---
 
+## Decisions log — Batch 1.6 scope expansion (2026-04-23, evening — post Batch 1.5 review)
+
+**Source**: Client feedback after reviewing Batch 1.5 screenshots. Four targeted changes layered on top of the brand amendment below. Captured here so the sequence of decisions isn't squashed into a single "redesign" bucket — each change has a discrete rationale.
+
+**Formalization**: REQ-1 through REQ-11 are now catalogued in `spec.md` under "Brand Redesign Requirements (amendment, 2026-04-23 — post-demo)". Prior conversation had been tracking them informally. **REQ-2 enriched**, **REQ-4 enriched**, **REQ-10 new**, **REQ-11 new** — all four stem from this evening's review.
+
+**Scope of this amendment**:
+
+1. **Logo size increase** (REQ-4 enrichment). Desktop header 56–64px (was 32–40px). Mobile 44px (was 28px at `<640px`). If the enlarged logo pushes the header past `h-20`, the header grows. Logo sets the scale, not the inverse.
+
+2. **Log-stream density** (REQ-2 enrichment). Stream renders 20–25 rows by default. Row vertical padding reduced ~30%. New "Show more" htmx-powered pagination endpoint loads the next 25 in place. "Showing X of Y" counter at the stream header. The stream becomes noticeably log-heavy — that is the point.
+
+3. **Location row copy** (REQ-10). On the home-page locations list, the secondary line shows `"N red · N yellow · N missing"` instead of the `"Group home"` / `"Day program"` type label. Zero-count state reads `"No flags this week"` (muted green). Type label preserved in drill-down page headers, Settings, and digest envelope copy (contexts where type aids orientation).
+
+4. **Background depth** (REQ-11). Soft `radial-gradient` from `#1a2547` (top-right) fading to `#0a1532` (bottom-left), `background-attachment: fixed`. Optional subtle grain at 3–4% opacity if the gradient alone reads too flat. Explicitly: no animation, no floating shapes, no particles, no "hero section" decoration.
+
+**One UX proposal surfaced for review**: at 25 rows per page, pills become visual clutter. Proposed replacement: **bar-only** severity signaling — 4px left accent bar (using existing `--ga-log-row-*` tokens landed in Batch 1.5) + whisper-tint row background, pill removed. Aggregate tiles still carry the count; the stream is for scanning. Full proposal in Phase 15 Batch 1.6 scope notes below.
+
+**Review sequencing**:
+1. Spec + tasks amendment landed as its own commit (this entry) — client reviews before implementation.
+2. Implement Batch 1.6 (tasks T145–T150 below) — one commit.
+3. Client reviews Batch 1.6 screenshots.
+4. ONLY THEN Batch 2 (log stream hero as originally planned — many of its AC items now subsumed by the Batch 1.6 enrichments).
+
+**Budget estimate**: ~4 hours for Batch 1.6 implementation (logo 30 min · stream density + pagination + counter 2–2.5 hr · location-row copy 20 min · background gradient 45 min). Excludes the review gate.
+
+---
+
 ## Decisions log — Brand direction change (2026-04-23, afternoon — post-demo)
 
 **Source**: Direct client feedback from Alonzo + LGA leadership during the live demo.
@@ -511,3 +539,75 @@ Not blocking tomorrow's demo. Add properly with file paths + dependencies after 
 - [ ] T142 **Locations-list counts wrap at 375px.** After the demo-readiness batch bumped the counts column to `sm:w-[11rem]`, mobile still falls back to `w-[9rem]` and the longest count strings (`NN red · NN yellow · NN missing`) wrap to two lines. Acceptable for demo; capture as a Tier 4 polish task. Options: shorten to `NNr · NNy · NNm` on mobile, or restructure the row as two stacked rows.
 - [ ] T143 **Real-classifier telemetry + resilience.** If the stub is going to stay in place for internal work beyond the demo, fix the failure-visibility gap that caused the audit: a full DB of `permanent_failure` rows with no surfaced warning anywhere. Scope: (a) admin-surfaced alert when `permanent_failure` count crosses a threshold, (b) per-error-code counts in an admin panel, (c) exponential-backoff retry on the 429 path before permanent-failing, (d) decide whether to keep attempting rate-limited models vs. fall back to a configured alt model. Prevents the same silent-break mode when we switch off the stub.
 - [ ] T144 **Stub-vs-real parity audit.** Once we have a paid OpenRouter model working, run the same note set through both paths and diff: do severity distributions match? does reason text shape match (length, format)? does the UI render both model_name values cleanly? The stub already uses the production model id for UI continuity; validate that the UI behaves identically when the real model returns its actual id.
+
+---
+
+## Phase 15 — Brand redesign (2026-04-23, batched migration)
+
+**Goal**: Execute the brand redesign amendment (see Decisions log at top of this file + REQ catalog in `spec.md`) in reviewable slices. No batch auto-proceeds — human review gate between every one.
+
+**Batch traceability**: each batch commit references the spec REQs it satisfies. The REQ → Batch mapping:
+
+| REQ | Landed in |
+|---|---|
+| REQ-1 (complete visual redesign) | Batch 1 (shell) + 1.5 (surfaces) + 1.6 (logo + depth) + 2–5 (per-page sweep) |
+| REQ-2 (log stream, density, show-more, counter) | Batch 1.6 (density + show-more + counter) + Batch 2 (hero placement) |
+| REQ-3 (brand colors) | Batch 1 |
+| REQ-4 (logo in header, sized per enrichment) | Batch 1 (initial) + 1.6 (size increase) |
+| REQ-5 (htmx everywhere) | Batch 5 |
+| REQ-6 (remove version history UI) | Batch 1.5 |
+| REQ-7 + REQ-8 (non-technical, bold, branded) | Cross-cutting |
+| REQ-9 (auto-poll 30s) | Batch 2 |
+| REQ-10 (location row flag counts) | Batch 1.6 |
+| REQ-11 (background depth) | Batch 1.6 |
+
+### Batch 1 — tokens + shell + logo + Inter (landed `1ef1110`)
+
+- [X] T#B1 Token system rewritten for navy + gold. Inter pinned. Logo (initial 40px) + static mount. Header/data-bar/footer retuned. Login card dark theme. Score: 139/139 tests; no 375px overflow.
+
+### Batch 1.5 — cream surfaces + text-on-light + gold chips + version-history UI removal (landed `40a1165`)
+
+- [X] T#B1.5 Cream surface palette added. Text-on-light tokens. `.ga-surface-cream` auto-cascades child text colors. `.ga-chip` / `.ga-chip-active` gold filter chips. Rules list, rule editor, drilldown lists, note detail, digest envelope, contextual help — all swapped from `bg-white` to cream. "Previous versions" link removed from `/rules` and `/rules/:key/edit` (route preserved, DB data preserved). Email body chrome stripped in preview so `<body>` styles don't leak to the parent page. Logo mobile breakpoint added (40→28px at `<640px`, superseded by Batch 1.6). Score: 139/139 tests; no 375px overflow; DOM audit confirms no residual version-history references.
+
+### Batch 1.6 — logo size + log-stream density + location row copy + background depth (planned — awaits client approval of this amendment)
+
+**Scope**: the four changes from the 2026-04-23 evening review. Full rationale in Decisions log at top of this file.
+
+**Severity-treatment proposal** (open for client decision):
+At 25 rows per page, the per-row severity pill repeats 25 times on screen, consuming ~60px horizontal room each and drawing the eye on every scroll tick. Aggregate tiles already carry flag counts; the stream's job is to show activity. Three options for client to choose from:
+- **Option A (pill + bar)**: keep a small stylized pill AND the 4px left accent bar. Redundant signal, safe.
+- **Option B (bar + tint, no pill — recommended)**: remove the pill. Severity lives in the 4px accent bar + `--ga-log-row-bg-*` whisper tint (tokens already exist from Batch 1.5). Accessibility preserved via `aria-label` on the row. Saves ~60px per row for the note preview; cleaner scroll rhythm.
+- **Option C (bar only)**: bar, no tint, no pill. Cleanest but severity reads less strongly when skimming quickly.
+- **Recommendation**: B. Easy to add pills back at review if it reads too sparse.
+
+**Tasks** (T145 onward because T142–T144 are already the post-demo follow-ups above):
+
+- [ ] T145 **Logo size increase + header height adjust** — `src/views/design-tokens-css.ts` (`.ga-logo-img` height: 60px desktop, 44px at `<640px`), `src/views/layout.ts` (header `h-20` → `h-22` if 60px pinches). **DoD**: login + dashboard render at desktop + 375px with no visual cramping; no horizontal overflow; screenshot diff shows larger, more present logo on both breakpoints. **Satisfies**: REQ-4 (AC-4.2, AC-4.3, AC-4.4). **Deps**: Batch 1.5 landed (`40a1165`). **Est**: 30 min.
+
+- [ ] T146 **Log-stream query + render component** — new `src/db/queries/log-stream.ts` exposing `getRecentLogRows(limit, offset, filters)` returning `(tlog_id, tlog_version, angel_name, individual_name, location_name, reported_date, shift_name, severity, display_category, note_preview)` joined from `t_logs` + `flags` + `individuals` + `angels` + `locations`. Unflagged notes surface with severity `green` (consistent with the rest of the app — "No flags" is still a status worth showing). New `src/views/log-stream.ts` renders the stream fragment: wrapper with `hx-trigger="every 30s" hx-get="/stream/latest" hx-swap="outerHTML"` for REQ-9, "Showing X of Y recent notes" counter at top, each row with `.ga-log-row` + `.ga-log-row-{red,amber,green}` (bar + tint, no pill — Option B unless client picks otherwise), row padding reduced to `py-3` (was `py-4`). **DoD**: query returns 25 rows against seeded data in < 50ms; view renders at 375px without overflow; counter updates on filter change. **Satisfies**: REQ-2 (AC-2.1, AC-2.2, AC-2.3, AC-2.4, AC-2.6), REQ-9 groundwork. **Deps**: T145. **Est**: 1.5 hr.
+
+- [ ] T147 **"Show more" pagination endpoint** — new `GET /stream/more?offset=N` route returning a fragment containing the next 25 rows appended. Client-side behavior: the "Show more" button's `hx-swap="outerHTML"` replaces itself with the 25 new rows + a new "Show more" button (or nothing if exhausted). No full page navigation. **DoD**: clicking "Show more" on a 314-row dataset loads batches cleanly to exhaustion; scroll position preserved; the stream header's "Showing X of Y" counter updates on each expand. **Satisfies**: REQ-2 (AC-2.5). **Deps**: T146. **Est**: 45 min.
+
+- [ ] T148 **Location row copy — flags instead of type** — `src/views/dashboard.ts` `renderLocationsList`: replace the `locationTypeLabel(r.location_type)` secondary line with `"${red} red · ${yellow} yellow · ${missing} missing"`; when all three are zero, render `"No flags this week"` in a muted-green state instead. Type label remains in drill-down page header (`src/views/drilldown.ts` line ~50), admin list (`src/views/admin-org.ts`), and digest envelope scope label (`src/digest/render.ts`) — unchanged there. **DoD**: `/` locations list shows flag breakdown on every row; zero-flag locations show the clean-state message; type string does not appear anywhere on the home page. Drill-down page header still reads "Riverside Group Home · Group home". **Satisfies**: REQ-10 (all AC). **Deps**: Batch 1.5 landed. **Est**: 20 min.
+
+- [ ] T149 **Background radial gradient** — `src/views/design-tokens-css.ts` `html, body` rule: replace `background-color: var(--ga-bg)` with a `radial-gradient(ellipse at top right, #1a2547 0%, #0a1532 65%)` using `background-attachment: fixed` so the gradient stays put while content scrolls. Test on login first, confirm readability, then inherit via the existing body rule (covers every authenticated page). If the gradient alone reads flat at review, a 3–4% opacity noise SVG data URI may layer on as a secondary `background-image`. **DoD**: login + dashboard + rules + drilldown all render the gradient; text-on-bg contrast still passes AA for every chrome element; no content flicker or layout shift on scroll. **Satisfies**: REQ-11 (AC-11.1, AC-11.2, AC-11.3, AC-11.5). **Deps**: Batch 1.5 landed. **Est**: 45 min.
+
+- [ ] T150 **Batch 1.6 verification pass** — screenshot capture at desktop + 375px for login + dashboard (home page with new stream + revised locations list) + rules. DOM audit: no location-type string on home page; stream has 25 rows; `hx-trigger="every 30s"` present; `hx-get="/stream/more?offset=25"` on the "Show more" button. Typecheck + full test suite clean. Budget screenshot review as the client review gate before Batch 2 kicks. **DoD**: screenshots saved under `C:/Users/DELL/AppData/Local/Temp/ga-shots-batch1-6/`; all AC rows from REQs 2/4/10/11 above green-ticked in a report back to the client. **Satisfies**: all Batch 1.6 REQ AC rows. **Deps**: T145, T146, T147, T148, T149. **Est**: 20 min.
+
+### Batch 2 — home-page log-stream hero placement (planned)
+
+**Scope**: Restructure the home page so the log stream (now built in Batch 1.6) is the primary scroll surface. Aggregate tiles and trend chart move below or beside the stream per REQ-2 (AC-2.1). This was originally the entire scope of Batch 2; many of its acceptance criteria are now covered by Batch 1.6 — Batch 2 narrows to layout/placement only.
+
+- [ ] T#B2 Home page restructure (placement-only after Batch 1.6). Detailed task breakdown pending Batch 1.6 landing.
+
+### Batch 3 — drilldown + note + rules polish (planned)
+
+- [ ] T#B3 Sweep remaining `bg-white` / `border-gray-*` / `text-blue-*` hardcodes from drill-down + note-detail + rules. Inventory from Batch 1 report + whatever's still standing after Batches 1.5/1.6.
+
+### Batch 4 — digest + admin + login (planned)
+
+- [ ] T#B4 Admin screens (admin-org, admin) full cream sweep. Login revisit in case the Batch 1.6 logo-size bump needs adjustments. Digest render may need minor tuning after the real email template is restyled.
+
+### Batch 5 — htmx interactivity sweep (planned)
+
+- [ ] T#B5 Convert every stateful UI interaction (filter chips, severity switches, date-range, rule-editor tabs) to `hx-swap` in place. Satisfies REQ-5. Largest scope batch — many touchpoints across views.
