@@ -242,13 +242,15 @@ These requirements SUPPLEMENT the functional requirements above — they do not 
 - **AC-1.1**: Every authenticated screen renders with `--ga-bg: #0a1532` as the page background (dark navy, not slate or light).
 - **AC-1.2**: Primary call-to-action buttons render with the gold accent (`--ga-gold: #e8b53c`); zero remaining `text-blue-*` / `bg-blue-*` Tailwind classes in shipped view code after the final sweep batch.
 
-**REQ-2 — Home page log stream.** The home page's primary content is a dense live stream of recent T-Log entries (newest first, color-coded by severity). Aggregate tiles (Red / Yellow / Missing / Compliance) and trend chart exist but sit below or beside the stream, not above it.
-- **AC-2.1**: The `/` route renders a log-stream region as the first scrollable block below the header + data-bar.
+**REQ-2 — Home page log stream + dedicated /logs page.** The home page surfaces a tight 4-row preview of recent T-Log entries (newest first, color-coded by severity). A dedicated `/logs` page hosts the full dense stream with pagination. Aggregate tiles, locations list, and trend chart on the home page sit below the 4-row preview, not below 25 rows.
+- **AC-2.1**: The `/` route renders a log-stream preview region as the first scrollable block below the header + data-bar.
 - **AC-2.2**: Each stream row shows angel name, individual name, location name, relative timestamp, severity signal, and a truncated note preview (≥ 60 characters visible at desktop, ≥ 40 characters on 375px mobile before ellipsis).
-- **AC-2.3**: Stream renders **20–25 rows by default** (enriched 2026-04-23 evening). Sparse 8–10 row renders are insufficient — Alonzo explicitly asked to "see the work happening."
-- **AC-2.4**: Row vertical padding is reduced ~30% vs. the location-row baseline so density reads as log-like without sacrificing 44px touch targets at the anchor level.
-- **AC-2.5**: A "Show more" affordance at the bottom of the stream loads the next 25 rows in place via htmx (no full-page navigation). Target is `outerHTML` swap of the stream tail; the existing rows remain on screen during the swap.
-- **AC-2.6**: The stream header shows a "Showing X of Y" counter (e.g., "Showing 25 of 314 recent notes") so context doesn't drop off when scrolling.
+- **AC-2.3** *(revised 2026-04-23 evening, post Batch 1.6 review)*: Home page `/` renders **4 stream rows by default** — a teasing preview, scannable in 3 seconds. The dedicated `/logs` page renders **20–25 rows by default** with "Show more" pagination. Reverses the prior 25-row home default after the user observed that 25 rows pushed the tiles + locations + trend chart below the fold and made the home read as "the full feed" rather than "the dashboard summary."
+- **AC-2.4**: Stream row vertical padding is reduced ~30% vs. the location-row baseline so density reads as log-like without sacrificing 44px touch targets at the anchor level. Applies to both home preview and `/logs` rows.
+- **AC-2.5** *(revised)*: On `/logs`, a "Show more" button loads the next 25 rows in place via htmx (no full-page navigation). Target is `outerHTML` swap on the stream tail. The home `/` preview does NOT paginate in place; it renders only the 4 rows and a "View all flags" button (see AC-2.7).
+- **AC-2.6** *(revised)*: On `/logs`, the stream header shows a "Showing X of Y" counter (e.g., "Showing 25 of 314 recent notes"). The home `/` preview omits this counter — the 4-row block stays clean and uncluttered; users go to `/logs` for the full picture.
+- **AC-2.7** *(new 2026-04-23 evening)*: The home `/` preview renders a primary gold "View all flags" CTA button below the 4 rows. Clicking navigates to `/logs`.
+- **AC-2.8** *(new 2026-04-23 evening)*: Primary nav includes a top-level "All flags" (or "Logs") link reachable from any authenticated page. Sits alongside Dashboard / Rules / Settings / user menu.
 
 **REQ-3 — LGA brand color theme.** Navy surface + gold accent + cream/white text. Exact hex values derived from the LGA marketing site and client confirmation.
 - **AC-3.1**: `:root` tokens in `src/views/design-tokens-css.ts` include `--ga-bg`, `--ga-surface`, `--ga-surface-elevated`, `--ga-gold`, and `--ga-cream` with the values approved on 2026-04-23.
@@ -278,10 +280,10 @@ These requirements SUPPLEMENT the functional requirements above — they do not 
 - **AC-8.2**: Gold accent is present on every primary screen (CTAs, active nav, focus rings, link accents).
 - **AC-8.3**: Typography uses Inter (via Google Fonts CDN, authorized per the brand amendment) with tabular numerals enabled for numeric tabular alignment.
 
-**REQ-9 — Log stream auto-refreshes.** Home-page stream feels live without user intervention.
-- **AC-9.1**: The stream's outer container carries `hx-trigger="every 30s"`, `hx-get="/stream/latest"`, `hx-swap="outerHTML"`.
-- **AC-9.2**: Poll endpoint returns the updated stream fragment including the current "Showing X of Y" counter.
-- **AC-9.3**: In-place polling does not reset the user's scroll position or expanded "Show more" state.
+**REQ-9 — Log stream auto-refreshes.** Both home preview and `/logs` page poll for fresh notes without user intervention.
+- **AC-9.1**: Both surfaces carry `hx-trigger="every 30s"`, `hx-get="/stream/latest?limit=N"`, `hx-swap="outerHTML"`. N=4 on home, N=25 on `/logs`.
+- **AC-9.2**: Poll endpoint returns the updated stream fragment with the current counter (on `/logs`) or no counter (on home).
+- **AC-9.3**: In-place polling does not reset the user's scroll position or, on `/logs`, the expanded "Show more" state.
 
 **REQ-10 — Location rows show flag breakdown instead of location type (new, 2026-04-23 evening).** On the home-page locations list, the secondary line shows active flag counts, not the "Group home" / "Day program" type label. Type labels remain in contexts where they aid orientation (drill-down page header, admin screens, digest envelope copy).
 - **AC-10.1**: On `/`, each row in "Locations this week" renders a secondary line of the form `"N red · N yellow · N missing"` (counts ≥ 0).

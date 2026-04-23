@@ -8,6 +8,25 @@ Tasks are topologically ordered — do them top-to-bottom. Every task cites the 
 
 ---
 
+## Decisions log — Batch 1.7 home stream reduction (2026-04-23, evening — post Batch 2 review)
+
+**Source**: Client feedback after living with the 25-row home stream shipped in Batch 1.6 (`aa436c6`). The dense stream pushed tiles + locations + trend chart below the fold and made the home read as "the full feed" rather than "the dashboard summary."
+
+**Reverses** AC-2.3 from spec amendment `4381f90` (which the client explicitly approved at Batch 1.6 review). The reversal is intentional and documented: living with the rendered design changed the call.
+
+**New behavior**:
+- Home page `/` shows **4 stream rows** as a tight preview (was 25).
+- A primary gold **"View all flags"** CTA below the 4 rows links to a new `/logs` page.
+- `/logs` hosts the full 20–25 row stream + existing "Show more" pagination + "Showing X of Y" counter — everything that was on the home in 1.6 moves here.
+- Both surfaces still auto-poll every 30s (REQ-9). Polling endpoint accepts `?limit=N` so home polls 4-row, `/logs` polls 25-row.
+- Primary nav adds a top-level "All flags" link (AC-2.8) so the page is reachable from anywhere, not just the home button.
+
+**What stays**: logo size (60px desktop / 44px mobile), background gradient, log-row severity bar treatment, location-row flag breakdown (REQ-10), version-history UI removal (REQ-6), all of Batch 1.5/1.6/2.
+
+**Spec impact**: `spec.md` REQ-2 acceptance criteria updated. AC-2.3 revised. AC-2.5 + AC-2.6 reframed for `/logs`-only behavior. AC-2.7 + AC-2.8 added. AC-9.1 updated to reflect `?limit=N` parameter.
+
+---
+
 ## Decisions log — Batch 1.6 scope expansion (2026-04-23, evening — post Batch 1.5 review)
 
 **Source**: Client feedback after reviewing Batch 1.5 screenshots. Four targeted changes layered on top of the brand amendment below. Captured here so the sequence of decisions isn't squashed into a single "redesign" bucket — each change has a discrete rationale.
@@ -610,9 +629,25 @@ At 25 rows per page, the per-row severity pill repeats 25 times on screen, consu
 
 - [X] T156 **Batch 2 verification pass.** Screenshots saved to `C:/Users/DELL/AppData/Local/Temp/ga-shots-batch2/` for location / angel / individual drill-down + note detail + rule editor (copy_paste + short_note) + rules list at desktop (1440x900) + 375px mobile. Curl audit confirms all DoD items above. Typecheck clean, 139/139 tests pass.
 
-### Batch 3 — drilldown + note + rules polish (planned)
+### Batch 1.7 — home stream reduced to 4-row preview + dedicated /logs page (planned)
 
-- [ ] T#B3 Sweep remaining `bg-white` / `border-gray-*` / `text-blue-*` hardcodes from drill-down + note-detail + rules. Inventory from Batch 1 report + whatever's still standing after Batches 1.5/1.6/2.
+**Scope**: Reverses the 25-row home default. See Decisions log entry at top of this file for rationale (the user lived with 25 rows and wanted the tiles + locations + trend back above the fold). Spec amendment landed in the same change-set as this Batch's tasks.
+
+- [ ] T157 **Spec amendment commit (no code).** Update `spec.md` REQ-2 acceptance criteria: revise AC-2.3 (4 home / 20-25 /logs), AC-2.5 ("Show more" lives on /logs), AC-2.6 (counter on /logs only), add AC-2.7 (View all flags CTA), add AC-2.8 (nav item). Update AC-9.1 (poll `?limit=N`). Update tasks.md Decisions log + Phase 15 Batch 1.7 task block. **DoD**: spec + tasks committed before any code change.
+
+- [ ] T158 **Home page reduced to 4-row preview + View all flags CTA.** Modify `app.get('/')` in `src/server.ts` to call `getRecentLogRows({ limit: 4, offset: 0, ... })`. Modify `renderLogStream` in `src/views/log-stream.ts` to accept a `compact` (or `previewMode`) flag that suppresses the counter + replaces the "Show more" button with a primary gold "View all flags" CTA → `/logs`. Polling URL becomes `/stream/latest?limit=4`. **Files**: `src/server.ts`, `src/views/log-stream.ts`. **DoD**: `/` renders 4 rows + gold CTA, no counter, polls `/stream/latest?limit=4`. Tiles + locations list + trend chart visible without scrolling at 1440x900 (desktop) and within 1.5 viewport-heights at 375px (mobile).
+
+- [ ] T159 **Dedicated `/logs` page.** New `app.get('/logs')` route in `src/server.ts` that renders the full stream (limit=25, with counter, with "Show more" button) inside the standard layout. Page title "All flags · Guardian Angel". Breadcrumb back to Dashboard at top. Filters cascade via query string (severity, shift, window) using existing parser helpers. **Files**: `src/server.ts`, `src/views/log-stream.ts` (no changes needed if compact flag default is false). **DoD**: `/logs` returns 200, renders 25 rows + counter + "Show more"; clicking Show more loads the next batch in place; polls `/stream/latest?limit=25`.
+
+- [ ] T160 **Nav item for /logs.** Add "All flags" nav link in `src/views/layout.ts` `renderHeader` desktop + mobile dropdowns, alongside Dashboard / Rules / Settings. Active-nav state when path matches `/logs`. **Files**: `src/views/layout.ts`. **DoD**: clicking "All flags" from any page navigates to `/logs` and the link shows active state when on that page.
+
+- [ ] T161 **Polling endpoint respects limit.** Update `app.get('/stream/latest')` to read `?limit=N` (clamped to 1..50, default DEFAULT_STREAM_PAGE_SIZE) and pass to `getRecentLogRows`. The view also needs to know whether to render counter + Show-more or compact + CTA — pass through a `?compact=1` flag. **Files**: `src/server.ts`. **DoD**: `GET /stream/latest?limit=4&compact=1` returns the 4-row preview shape; `GET /stream/latest?limit=25` returns the full 25-row /logs shape.
+
+- [ ] T162 **Batch 1.7 verification pass.** Screenshot `/`, `/logs` (showing initial 25 + after one Show more click), and a couple of drill-throughs for nav-item active state, at desktop (1440x900) + 375px mobile. DOM audit: `/` has exactly 4 `<li class="ga-log-row">` and one `View all flags` CTA, no Show-more button, no counter. `/logs` has 25 rows + counter + Show-more button. Nav `<a>All flags</a>` present in header on both pages. Typecheck + 139/139 tests still pass. **Files**: `scripts/batch1-7-screenshots.mjs` (new). **DoD**: client gets a report identical-shape to Batch 1.6 with screenshots + AC trace. **Deps**: T158-T161.
+
+### Batch 3 — digest preview + admin screens + login + Tailwind sweep (planned)
+
+- [ ] T#B3 Digest preview polish (post-Batch-1.5 cream chrome already lands clean; check for residuals). Admin screens (admin-org, admin) full cream sweep — `bg-white` + `border-gray-*` + `text-blue-*` hardcodes still present per the 113-class inventory from Batch 1. Login page revisit in case the Batch 1.6 60px logo bump made the centered-card composition feel off. Final sweep of any remaining hardcoded Tailwind colors across the view layer.
 
 ### Batch 4 — digest + admin + login (planned)
 
