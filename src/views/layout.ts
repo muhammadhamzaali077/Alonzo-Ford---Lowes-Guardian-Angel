@@ -15,7 +15,7 @@
 import { config } from '../config.js';
 import { DESIGN_TOKENS_STYLE } from './design-tokens-css.js';
 
-export type NavKey = 'dashboard' | 'rules' | 'settings' | null;
+export type NavKey = 'dashboard' | 'logs' | 'rules' | 'settings' | null;
 
 export type UserRole = 'admin' | 'leadership' | 'manager' | 'demo';
 
@@ -255,10 +255,9 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
     return `<a href="${href}" class="${cls}"${activeStyle}>${label}</a>`;
   };
   // Logo: real asset at public/assets/lga-logo.png, served via /assets/*.
-  // Desktop: 40px (REQ-4 upper bound). Mobile (<640px): 28px so the nav row
-  // has room for the hamburger beside it without crowding. The PNG intrinsic
-  // is 209x97; width scales from height. `.ga-logo-img` is defined in the
-  // design-tokens stylesheet so the media query lives with the other sizes.
+  // Sizes live in design-tokens-css.ts under .ga-logo-img: 60px desktop,
+  // 44px mobile (<640px), per REQ-4 enrichment in Batch 1.6. The PNG
+  // intrinsic is 209x97; width scales from height.
   const logo = `<a href="/" class="flex items-center gap-3 ga-transition ga-focus rounded" aria-label="Lowe's Guardian Angel — home">
       <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" class="ga-logo-img">
     </a>`;
@@ -268,6 +267,7 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
         ${logo}
         <nav class="hidden md:flex items-center gap-2 text-sm" aria-label="Primary">
           ${navLink('/', 'Dashboard', 'dashboard')}
+          ${navLink('/logs', 'All flags', 'logs')}
           ${showRules ? navLink('/rules', 'Rules', 'rules') : ''}
           ${showSettings ? navLink('/admin/org', 'Settings', 'settings') : ''}
           <details class="relative ml-2">
@@ -291,6 +291,7 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
           <div class="absolute right-0 top-full mt-1 min-w-[12rem] py-1 z-10 ga-shadow-md"
                style="background-color: var(--ga-surface-elevated); border: 1px solid var(--ga-border-strong); border-radius: var(--ga-radius-md);">
             <a href="/" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Dashboard</a>
+            <a href="/logs" class="block px-3 py-3 text-sm ga-text min-h-[44px]">All flags</a>
             ${showRules ? '<a href="/rules" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Rules</a>' : ''}
             ${showSettings ? '<a href="/admin/org" class="block px-3 py-3 text-sm ga-text min-h-[44px]">Settings</a>' : ''}
             <div class="mt-1 pt-1" style="border-top: 1px solid var(--ga-border);">

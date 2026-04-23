@@ -1,19 +1,23 @@
-// Home-page log stream — the new primary scroll surface per REQ-2.
+// Home-page log stream — the primary scroll surface per REQ-2.
 //
-// Two rendering shapes share markup here:
+// Three rendering shapes share markup here:
 //
-//   renderLogStream(...)         — full component. Used on initial page
-//                                  render and by the 30-second htmx poll
-//                                  (hx-swap="outerHTML" replaces the
-//                                  whole container so the counter and
-//                                  rows update together).
+//   renderLogStream(...)         — full component. Used on /logs initial
+//                                  page render and by the 30-second htmx
+//                                  poll (hx-swap="outerHTML" replaces
+//                                  the whole container so the counter
+//                                  and rows update together). Pass
+//                                  `compact: true` for the home `/`
+//                                  preview shape: 4 rows, no counter,
+//                                  primary "View all flags" CTA in
+//                                  place of "Show more" (Batch 1.7).
 //
 //   renderLogStreamPage(...)     — additive fragment. Returned by the
 //                                  "Show more" endpoint; replaces the
 //                                  tail of the stream (the old button +
 //                                  empty slot) with the new rows + a
 //                                  fresh "Show more" button (or nothing
-//                                  if exhausted).
+//                                  if exhausted). Only used on /logs.
 //
 // Severity treatment (Batch 1.6 Option B — bar + tint, no pill):
 //   - 4px colored left bar via .ga-log-row-{red,amber,green} class
@@ -26,6 +30,7 @@ import type { LogStreamRow } from '../db/queries/log-stream.js';
 import { escapeHtml } from './layout.js';
 
 export const DEFAULT_STREAM_PAGE_SIZE = 25;
+export const HOME_PREVIEW_PAGE_SIZE = 4;
 
 export interface LogStreamViewParams {
   rows: LogStreamRow[];
@@ -42,24 +47,37 @@ export interface LogStreamViewParams {
    * carry through. Empty string when no filters active.
    */
   queryString?: string;
+  /**
+   * Compact (home preview) mode — Batch 1.7. Suppresses the "Showing X
+   * of Y" counter and the "Auto-refreshes" caption, replaces the
+   * "Show more" button with a primary gold "View all flags" CTA → /logs.
+   * The poll URL automatically carries `compact=1` so the 30s refresh
+   * returns a same-shape fragment.
+   */
+  compact?: boolean;
 }
 
 export function renderLogStream(params: LogStreamViewParams): string {
-  const pageSize = params.pageSize ?? DEFAULT_STREAM_PAGE_SIZE;
+  const compact = params.compact ?? false;
+  const defaultSize = compact ? HOME_PREVIEW_PAGE_SIZE : DEFAULT_STREAM_PAGE_SIZE;
+  const pageSize = params.pageSize ?? defaultSize;
   const shown = Math.min(params.rows.length, pageSize);
-  const pollQs = params.queryString ? `?${params.queryString}` : '';
-  // Poll target returns a replacement component of the SAME shape but
-  // with offset=0 and limit=currently-shown so the user's "Show more"
-  // expansions aren't lost on refresh.
-  const pollUrl = `/stream/latest${pollQs}`;
+  // Poll URL carries compact + limit so the 30s refresh returns the
+  // same shape the user is currently looking at.
+  const pollParts: string[] = [];
+  if (params.queryString) pollParts.push(params.queryString);
+  pollParts.push(`limit=${pageSize}`);
+  if (compact) pollParts.push('compact=1');
+  const pollUrl = `/stream/latest?${pollParts.join('&')}`;
 
-  return `<section id="log-stream"
-  hx-get="${pollUrl}"
-  hx-trigger="every 30s"
-  hx-swap="outerHTML"
-  aria-label="Recent notes feed"
-  class="mt-6">
-  <header class="flex items-center justify-between gap-3 flex-wrap mb-3">
+  // Header varies by mode. Compact: just the title + view-all hint.
+  // Full: title + "Showing X of Y" counter + auto-refresh caption.
+  const header = compact
+    ? `<header class="flex items-center justify-between gap-3 flex-wrap mb-3">
+    <h2 class="ga-h2">Recent notes</h2>
+    <span class="ga-caption">Live feed</span>
+  </header>`
+    : `<header class="flex items-center justify-between gap-3 flex-wrap mb-3">
     <div>
       <h2 class="ga-h2">Recent notes</h2>
       <p class="mt-0.5 ga-caption">
@@ -67,12 +85,38 @@ export function renderLogStream(params: LogStreamViewParams): string {
       </p>
     </div>
     <span class="ga-caption">Auto-refreshes every 30 seconds</span>
-  </header>
+  </header>`;
+
+  // Footer: compact = View all flags CTA. Full = Show more button.
+  const footer = compact
+    ? renderViewAllFlagsCta(params.total)
+    : renderLoadMoreButton(params.rows.length, params.total, params.offset + shown, params.queryString);
+
+  return `<section id="log-stream"
+  hx-get="${pollUrl}"
+  hx-trigger="every 30s"
+  hx-swap="outerHTML"
+  aria-label="Recent notes feed"
+  class="mt-6">
+  ${header}
   <ul class="ga-surface rounded-md overflow-hidden" style="border: 1px solid var(--ga-border);">
     ${params.rows.map((r) => renderRow(r)).join('')}
   </ul>
-  ${renderLoadMoreButton(params.rows.length, params.total, params.offset + shown, params.queryString)}
+  ${footer}
 </section>`;
+}
+
+/**
+ * Home-preview footer — primary gold CTA to /logs (AC-2.7). The total
+ * count nudges the click without the inline counter dominating header
+ * space.
+ */
+function renderViewAllFlagsCta(total: number): string {
+  return `<div class="mt-4 flex justify-center">
+    <a href="/logs" class="ga-btn ga-btn-primary">
+      View all flags<span class="ga-text-subtle ml-2 tnum" style="color: rgba(26, 20, 6, 0.65);">· ${total} total</span>
+    </a>
+  </div>`;
 }
 
 /**

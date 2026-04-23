@@ -70,7 +70,7 @@ import {
   getOverallCountsWithPrior,
 } from './db/queries/dashboard.js';
 import { getRecentLogRows } from './db/queries/log-stream.js';
-import { renderLogStream, renderLogStreamPage, DEFAULT_STREAM_PAGE_SIZE } from './views/log-stream.js';
+import { renderLogStream, renderLogStreamPage, DEFAULT_STREAM_PAGE_SIZE, HOME_PREVIEW_PAGE_SIZE } from './views/log-stream.js';
 import { getComplianceTrend } from './db/queries/compliance-score.js';
 import { getAnchorDate, getFreshnessLabel, getLastIngestedAt } from './db/queries/last-refresh.js';
 import { getFlagsForNote, getNoteDetail } from './db/queries/note.js';
@@ -85,7 +85,7 @@ import { humanizeSince, resolveWindowFromAnchor, type WindowPreset } from './lib
 import { logger } from './lib/logger.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderAngelView, renderIndividualView, renderLocationView } from './views/drilldown.js';
-import { layout } from './views/layout.js';
+import { layout, escapeHtml } from './views/layout.js';
 import { renderLoginPage } from './views/auth-login.js';
 import { seedUsers } from './jobs/seed-users.js';
 import { renderDigestPreview } from './views/digest-preview.js';
@@ -440,8 +440,9 @@ app.get('/', (c) => {
   const trend = getComplianceTrend(locationIds, windowRange.start, windowRange.end);
   const sparklines = new Map(trend.map((s) => [s.location_id, s.points]));
 
-  // Log stream (REQ-2): 25 most recent T-Logs within the current window,
-  // scoped to the user's location access. Filters cascade via the URL.
+  // Log stream (REQ-2 revised by Batch 1.7): 4-row compact preview on
+  // the home page. The dedicated /logs page hosts the full 25-row
+  // stream + Show more pagination. Filters still cascade via URL.
   const streamFilters = {
     severity: c.req.query('severity'),
     shift: c.req.query('shift'),
@@ -449,7 +450,7 @@ app.get('/', (c) => {
   const streamPage = getRecentLogRows({
     start: windowRange.start,
     end: windowRange.end,
-    limit: DEFAULT_STREAM_PAGE_SIZE,
+    limit: HOME_PREVIEW_PAGE_SIZE,
     offset: 0,
     filters: streamFilters,
     scopedLocationIds: scope.locations === 'all' ? undefined : scope.locations,
@@ -458,7 +459,9 @@ app.get('/', (c) => {
     rows: streamPage.rows,
     total: streamPage.total,
     offset: 0,
+    pageSize: HOME_PREVIEW_PAGE_SIZE,
     queryString: streamQueryString(c),
+    compact: true,
   });
 
   const welcomeDismissed = getCookie(c, 'ga_welcome_dismissed') === '1';
@@ -506,19 +509,26 @@ function streamQueryString(c: { req: { query: (k: string) => string | undefined 
 }
 
 /**
- * 30-second poll target for the home-page log stream (REQ-9). Returns a
- * replacement for the entire <section id="log-stream"> element. The
- * caller's htmx hx-swap="outerHTML" swaps the whole section in place —
- * the client's scroll position is preserved because the new section's
- * height approximates the old one (same 25 rows + button).
+ * 30-second poll target for both the home preview AND the /logs full
+ * stream (REQ-9 / AC-9.1). Reads `?limit=N` (1..50, default 25) and
+ * `?compact=1` (home preview shape vs. full /logs shape) so each
+ * surface refreshes in its own size and shape. The htmx hx-swap=
+ * "outerHTML" call replaces the whole <section id="log-stream"> in
+ * place — scroll position is preserved because the section's height
+ * stays roughly stable (same row count + same footer affordance).
  */
 app.get('/stream/latest', (c) => {
   const scope = mustGetScope(c);
   const windowRange = resolveWindowFromAnchor(parseWindowParam(c.req.query('window')), getAnchorDate());
+  const requestedLimit = Number.parseInt(c.req.query('limit') ?? `${DEFAULT_STREAM_PAGE_SIZE}`, 10);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.max(1, Math.min(50, requestedLimit))
+    : DEFAULT_STREAM_PAGE_SIZE;
+  const compact = c.req.query('compact') === '1';
   const streamPage = getRecentLogRows({
     start: windowRange.start,
     end: windowRange.end,
-    limit: DEFAULT_STREAM_PAGE_SIZE,
+    limit,
     offset: 0,
     filters: {
       severity: c.req.query('severity'),
@@ -531,7 +541,58 @@ app.get('/stream/latest', (c) => {
       rows: streamPage.rows,
       total: streamPage.total,
       offset: 0,
+      pageSize: limit,
       queryString: streamQueryString(c),
+      compact,
+    }),
+  );
+});
+
+/**
+ * Dedicated /logs page (Batch 1.7 / AC-2.7). Hosts the full 25-row
+ * stream + "Show more" pagination + counter — everything that used to
+ * live on `/` before the home page got reduced to a 4-row preview.
+ * Filters cascade via query string the same way as `/`.
+ */
+app.get('/logs', (c) => {
+  const scope = mustGetScope(c);
+  const windowRange = resolveWindowFromAnchor(parseWindowParam(c.req.query('window')), getAnchorDate());
+  const streamFilters = {
+    severity: c.req.query('severity'),
+    shift: c.req.query('shift'),
+  };
+  const streamPage = getRecentLogRows({
+    start: windowRange.start,
+    end: windowRange.end,
+    limit: DEFAULT_STREAM_PAGE_SIZE,
+    offset: 0,
+    filters: streamFilters,
+    scopedLocationIds: scope.locations === 'all' ? undefined : scope.locations,
+  });
+  const logStreamHtml = renderLogStream({
+    rows: streamPage.rows,
+    total: streamPage.total,
+    offset: 0,
+    pageSize: DEFAULT_STREAM_PAGE_SIZE,
+    queryString: streamQueryString(c),
+    compact: false,
+  });
+
+  const body = `<section>
+  <div class="mt-2">
+    <h1 class="ga-h1">All flags</h1>
+    <p class="mt-1 ga-caption">${escapeHtml(windowRange.label)} · auto-refreshes every 30 seconds</p>
+  </div>
+  ${logStreamHtml}
+</section>`;
+
+  return c.html(
+    renderLayout(c, {
+      title: 'All flags · Guardian Angel',
+      body,
+      user: { name: scope.user.name, role: scope.user.role },
+      activeNav: 'logs',
+      dataCurrentAs: getFreshnessLabel(),
     }),
   );
 });
