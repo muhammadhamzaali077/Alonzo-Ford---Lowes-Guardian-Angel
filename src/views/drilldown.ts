@@ -5,7 +5,7 @@
 import type { AngelAggregateRow, FlaggedNoteRow, IndividualAggregateRow, MissingFlagRow } from '../db/queries/drilldown.js';
 import type { WindowRange } from '../lib/time.js';
 import { escapeHtml } from './layout.js';
-import { rollupPill, renderBreadcrumb, displayCategoryLabel, type DisplayCategory } from './ui.js';
+import { rollupPill, renderBreadcrumb, displayCategoryLabel, locationTypeLabel, type DisplayCategory } from './ui.js';
 import { contextualHelp } from './contextual-help.js';
 
 export interface LocationViewData {
@@ -44,11 +44,16 @@ ${data.angels
 
   const missingHtml = renderMissingFlagsSection(data.missingFlags);
 
+  // Drill-down header: name + type + window (AC-10.4 — type appears for
+  // orientation on drill-down pages even though it's gone from the home
+  // locations list). The `location.type` DB field is the enum form; the
+  // `locationTypeLabel` helper produces the humanized label.
+  const typeLabel = locationTypeLabel(data.location.type as 'group_home' | 'host_home' | 'day_program');
   return `<section>
   ${crumb}
   <div class="mt-2">
     <h1 class="text-2xl font-semibold ga-text-strong">${escapeHtml(data.location.name)}</h1>
-    <p class="mt-1 text-sm ga-text">${escapeHtml(data.window.label)}</p>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(typeLabel)} · ${escapeHtml(data.window.label)}</p>
   </div>
   <h2 class="mt-6 text-lg font-medium ga-text-strong">Angels at this location</h2>
   ${listHtml}

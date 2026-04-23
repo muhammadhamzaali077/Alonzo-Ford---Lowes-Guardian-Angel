@@ -5,7 +5,7 @@ import type { LocationRow, OverallCountsWithPrior } from '../db/queries/dashboar
 import type { TrendSeries } from '../db/queries/compliance-score.js';
 import type { WindowRange } from '../lib/time.js';
 import { escapeHtml } from './layout.js';
-import { rollupPill, locationTypeLabel } from './ui.js';
+import { rollupPill } from './ui.js';
 import { renderTrendChart } from './trend-chart.js';
 import { renderSparkline, type SparklinePoint } from './sparkline.js';
 import { contextualHelp } from './contextual-help.js';
@@ -26,12 +26,20 @@ export interface DashboardViewData {
   };
   /** True when the user hasn't dismissed the welcome card (cookie unset). */
   showWelcome: boolean;
+  /**
+   * Pre-rendered log-stream HTML (per REQ-2). Hero surface of the page.
+   * Optional so test fixtures that don't care about the stream can omit
+   * it; server handlers always provide it.
+   */
+  logStreamHtml?: string;
 }
 
 export function renderDashboard(data: DashboardViewData): string {
-  // T120 — visible filter-chip bar above the tiles. Clicks drop you
-  // into the severity/shift filter via query string; the filter-disclosure
-  // form below is still there for date-range selection.
+  // Layout order (Batch 1.6 — REQ-2 AC-2.1): welcome (dismissable) →
+  // title → filter chips → log stream HERO → tiles → locations list →
+  // trend chart. The stream is the primary scrollable surface; tiles and
+  // the list live below as secondary / drill-ins, matching the client's
+  // "show me the work happening" framing.
   const filteredLocations = applyDashboardFilters(data.locations, data.filters);
   return `
 <section>
@@ -39,6 +47,7 @@ export function renderDashboard(data: DashboardViewData): string {
   ${renderTitleRow(data)}
   ${renderChipBar(data.filters, windowPresetFromLabel(data.window.label))}
   ${renderFilter(data)}
+  ${data.logStreamHtml ?? ''}
   ${renderTiles(data.overall)}
   ${renderLocationsList(filteredLocations, data.sparklines, data.filters, data.locations.length)}
   ${renderTrendSection(data.trend)}
@@ -307,25 +316,31 @@ function renderLocationsList(
 
   const rowsHtml = rows
     .map((r) => {
-      const counts = [
-        r.red_content > 0 ? `${r.red_content} red` : '',
-        r.yellow_count > 0 ? `${r.yellow_count} yellow` : '',
-        r.missing_count > 0 ? `${r.missing_count} missing` : '',
-      ]
-        .filter(Boolean)
-        .join(' · ');
-      const countsOrEmpty = counts || 'No flags';
+      // Per REQ-10 (Batch 1.6): location type label is replaced by the
+      // flag breakdown as the row's secondary line. Type still shows on
+      // drill-down page headers, Settings, and digest envelope copy —
+      // just not here, where actionable flag counts beat institutional
+      // vocabulary for the CEO's scan. Zero-flag state gets its own
+      // muted-green "clean" line rather than "0 red · 0 yellow · 0 missing".
+      const hasFlags = r.red_content > 0 || r.yellow_count > 0 || r.missing_count > 0;
+      const secondaryLine = hasFlags
+        ? `<span class="tnum">${r.red_content} red · ${r.yellow_count} yellow · ${r.missing_count} missing</span>`
+        : `<span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full ga-sev-green-dot" aria-hidden="true"></span>No flags this week</span>`;
+      const secondaryStyle = hasFlags
+        ? 'color: var(--ga-text-muted);'
+        : 'color: var(--ga-green);';
       const sparkPoints = sparklines.get(r.location_id) ?? [];
       const sparkHtml = renderSparkline(sparkPoints, { label: `${r.location_name} compliance trend` });
       return `<li>
   <a href="/location/${encodeURIComponent(r.location_id)}" class="ga-row flex items-center px-5 py-4 gap-4 min-h-[56px] ga-transition ga-focus">
-    <div class="flex items-center gap-3 min-w-0 flex-1">
+    <div class="shrink-0">
       ${rollupPill(r.red_content, r.yellow_count, r.missing_count)}
-      <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(r.location_name)}</span>
-      <span class="hidden sm:inline text-xs ga-text-muted">${escapeHtml(locationTypeLabel(r.location_type))}</span>
+    </div>
+    <div class="min-w-0 flex-1">
+      <div class="text-sm font-medium ga-text-strong truncate">${escapeHtml(r.location_name)}</div>
+      <div class="mt-0.5 text-xs" style="${secondaryStyle}">${secondaryLine}</div>
     </div>
     <span class="hidden sm:inline-flex items-center shrink-0" aria-hidden="true">${sparkHtml}</span>
-    <span class="text-sm ga-text tnum shrink-0 w-[9rem] sm:w-[11rem] text-right">${escapeHtml(countsOrEmpty)}</span>
   </a>
 </li>`;
     })

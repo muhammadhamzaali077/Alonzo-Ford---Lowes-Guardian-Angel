@@ -6,7 +6,7 @@ import puppeteer from 'puppeteer';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const OUT = 'C:/Users/DELL/AppData/Local/Temp/ga-shots-batch1';
+const OUT = 'C:/Users/DELL/AppData/Local/Temp/ga-shots-batch1-6';
 mkdirSync(OUT, { recursive: true });
 
 const CAPTURE_RULES = true;

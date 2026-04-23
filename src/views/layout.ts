@@ -264,7 +264,7 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
     </a>`;
   return `  <header style="background-color: var(--ga-bg); border-bottom: 1px solid var(--ga-border);">
     <div class="mx-auto max-w-7xl px-4 sm:px-6">
-      <div class="flex items-center justify-between h-20">
+      <div class="flex items-center justify-between h-24">
         ${logo}
         <nav class="hidden md:flex items-center gap-2 text-sm" aria-label="Primary">
           ${navLink('/', 'Dashboard', 'dashboard')}

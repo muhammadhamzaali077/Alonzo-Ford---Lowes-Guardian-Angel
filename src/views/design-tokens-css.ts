@@ -505,14 +505,28 @@ export const DESIGN_TOKENS_STYLE = `<style>
     /* In-flight dim state */
     .htmx-request[data-dim-while-loading] { opacity: 0.55; pointer-events: none; }
 
-    /* App-wide base — font stack + default text color on dark bg */
+    /* App-wide base — font stack + default text color on dark bg.
+       Background per REQ-11 (Batch 1.6): soft radial gradient from
+       #1a2547 (top-right) fading to #0a1532 (bottom-left), fixed to the
+       viewport so it acts as an ambient light source rather than
+       scrolling with content. background-color is the fallback for
+       email clients / older contexts; the gradient paints over it.
+       The ellipse shape is wide+tall so the lightest point sits off-
+       canvas top-right, giving a gentle diagonal falloff. */
     html, body {
       font-family: var(--ga-font-sans);
       font-feature-settings: 'cv11', 'ss01', 'ss03';  /* Inter stylistic: alt 1, alt 9 */
       background-color: var(--ga-bg);
       color: var(--ga-text);
     }
-    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-image: radial-gradient(ellipse 120% 100% at 100% 0%, #1a2547 0%, #0a1532 65%);
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+    }
 
     /* Respect reduced-motion */
     @media (prefers-reduced-motion: reduce) {
@@ -525,11 +539,15 @@ export const DESIGN_TOKENS_STYLE = `<style>
     /* Selection color — gold */
     ::selection { background-color: var(--ga-gold); color: #1a1406; }
 
-    /* Logo sizing — desktop 40px, mobile (<640px) 28px. Width auto-scales
-       from the PNG's 209x97 intrinsic aspect ratio. Mobile step matches
-       REQ-4 revision from Batch 1.5 ("scale down to ~28px on mobile"). */
-    .ga-logo-img { height: 40px; width: auto; display: block; }
+    /* Logo sizing — desktop 60px, mobile (<640px) 44px. Width auto-scales
+       from the PNG's 209x97 intrinsic aspect ratio. Per REQ-4 enrichment
+       (Batch 1.6): the logo is the strongest brand signal on every page —
+       earlier 40/28 read as tucked-away. 60px on desktop puts it in the
+       56-64px range approved by the client; 44px on mobile keeps the
+       hamburger-adjacent row intentional (not cramped). The header grows
+       from h-20 to h-24 to accommodate. */
+    .ga-logo-img { height: 60px; width: auto; display: block; }
     @media (max-width: 639px) {
-      .ga-logo-img { height: 28px; }
+      .ga-logo-img { height: 44px; }
     }
   </style>`;

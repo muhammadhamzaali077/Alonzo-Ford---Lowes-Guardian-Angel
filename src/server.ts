@@ -69,6 +69,8 @@ import {
   getLocationAggregates,
   getOverallCountsWithPrior,
 } from './db/queries/dashboard.js';
+import { getRecentLogRows } from './db/queries/log-stream.js';
+import { renderLogStream, renderLogStreamPage, DEFAULT_STREAM_PAGE_SIZE } from './views/log-stream.js';
 import { getComplianceTrend } from './db/queries/compliance-score.js';
 import { getAnchorDate, getFreshnessLabel, getLastIngestedAt } from './db/queries/last-refresh.js';
 import { getFlagsForNote, getNoteDetail } from './db/queries/note.js';
@@ -438,6 +440,27 @@ app.get('/', (c) => {
   const trend = getComplianceTrend(locationIds, windowRange.start, windowRange.end);
   const sparklines = new Map(trend.map((s) => [s.location_id, s.points]));
 
+  // Log stream (REQ-2): 25 most recent T-Logs within the current window,
+  // scoped to the user's location access. Filters cascade via the URL.
+  const streamFilters = {
+    severity: c.req.query('severity'),
+    shift: c.req.query('shift'),
+  };
+  const streamPage = getRecentLogRows({
+    start: windowRange.start,
+    end: windowRange.end,
+    limit: DEFAULT_STREAM_PAGE_SIZE,
+    offset: 0,
+    filters: streamFilters,
+    scopedLocationIds: scope.locations === 'all' ? undefined : scope.locations,
+  });
+  const logStreamHtml = renderLogStream({
+    rows: streamPage.rows,
+    total: streamPage.total,
+    offset: 0,
+    queryString: streamQueryString(c),
+  });
+
   const welcomeDismissed = getCookie(c, 'ga_welcome_dismissed') === '1';
 
   const body = renderDashboard({
@@ -452,6 +475,7 @@ app.get('/', (c) => {
       shift: c.req.query('shift'),
       locationId: c.req.query('loc'),
     },
+    logStreamHtml,
   });
 
   return c.html(
@@ -462,6 +486,85 @@ app.get('/', (c) => {
       activeNav: 'dashboard',
       dataCurrentAs: getFreshnessLabel(),
     }),
+  );
+});
+
+/**
+ * Build the query-string suffix that carries current filters through
+ * to the stream's poll + "Show more" endpoints, so the user's dashboard
+ * state stays coherent across the async fetches.
+ */
+function streamQueryString(c: { req: { query: (k: string) => string | undefined } }): string {
+  const parts: string[] = [];
+  const window = c.req.query('window');
+  const severity = c.req.query('severity');
+  const shift = c.req.query('shift');
+  if (window) parts.push(`window=${encodeURIComponent(window)}`);
+  if (severity) parts.push(`severity=${encodeURIComponent(severity)}`);
+  if (shift) parts.push(`shift=${encodeURIComponent(shift)}`);
+  return parts.join('&');
+}
+
+/**
+ * 30-second poll target for the home-page log stream (REQ-9). Returns a
+ * replacement for the entire <section id="log-stream"> element. The
+ * caller's htmx hx-swap="outerHTML" swaps the whole section in place —
+ * the client's scroll position is preserved because the new section's
+ * height approximates the old one (same 25 rows + button).
+ */
+app.get('/stream/latest', (c) => {
+  const scope = mustGetScope(c);
+  const windowRange = resolveWindowFromAnchor(parseWindowParam(c.req.query('window')), getAnchorDate());
+  const streamPage = getRecentLogRows({
+    start: windowRange.start,
+    end: windowRange.end,
+    limit: DEFAULT_STREAM_PAGE_SIZE,
+    offset: 0,
+    filters: {
+      severity: c.req.query('severity'),
+      shift: c.req.query('shift'),
+    },
+    scopedLocationIds: scope.locations === 'all' ? undefined : scope.locations,
+  });
+  return c.html(
+    renderLogStream({
+      rows: streamPage.rows,
+      total: streamPage.total,
+      offset: 0,
+      queryString: streamQueryString(c),
+    }),
+  );
+});
+
+/**
+ * "Show more" pagination for the home-page log stream (REQ-2 AC-2.5).
+ * Returns the next batch of rows + an OOB swap fragment replacing the
+ * "Show more" button. The rows are appended via hx-swap="beforeend" on
+ * the parent <ul>; the button's DIV is replaced via hx-swap-oob="true".
+ */
+app.get('/stream/more', (c) => {
+  const scope = mustGetScope(c);
+  const windowRange = resolveWindowFromAnchor(parseWindowParam(c.req.query('window')), getAnchorDate());
+  const requestedOffset = Number.parseInt(c.req.query('offset') ?? '0', 10);
+  const offset = Number.isFinite(requestedOffset) && requestedOffset > 0 ? requestedOffset : 0;
+  const streamPage = getRecentLogRows({
+    start: windowRange.start,
+    end: windowRange.end,
+    limit: DEFAULT_STREAM_PAGE_SIZE,
+    offset,
+    filters: {
+      severity: c.req.query('severity'),
+      shift: c.req.query('shift'),
+    },
+    scopedLocationIds: scope.locations === 'all' ? undefined : scope.locations,
+  });
+  return c.html(
+    renderLogStreamPage(
+      streamPage.rows,
+      streamPage.total,
+      offset + streamPage.rows.length,
+      streamQueryString(c),
+    ),
   );
 });
 
