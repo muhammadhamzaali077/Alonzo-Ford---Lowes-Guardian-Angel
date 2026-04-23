@@ -321,23 +321,21 @@ function renderLocationsList(
       const sparkPoints = sparklines.get(r.location_id) ?? [];
       const sparkHtml = renderSparkline(sparkPoints, { label: `${r.location_name} compliance trend` });
       return `<li>
-  <a href="/location/${encodeURIComponent(r.location_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
-    <div class="flex items-center gap-3 min-w-0">
+  <a href="/location/${encodeURIComponent(r.location_id)}" class="ga-row flex items-center px-5 py-4 gap-4 min-h-[56px] ga-transition ga-focus">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
       ${rollupPill(r.red_content, r.yellow_count, r.missing_count)}
       <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(r.location_name)}</span>
       <span class="hidden sm:inline text-xs ga-text-muted">${escapeHtml(locationTypeLabel(r.location_type))}</span>
     </div>
-    <div class="flex items-center gap-3 shrink-0">
-      <span class="hidden sm:inline" aria-hidden="true">${sparkHtml}</span>
-      <span class="text-sm ga-text tnum">${escapeHtml(countsOrEmpty)}</span>
-    </div>
+    <span class="hidden sm:inline-flex items-center shrink-0" aria-hidden="true">${sparkHtml}</span>
+    <span class="text-sm ga-text tnum shrink-0 w-[9rem] text-right">${escapeHtml(countsOrEmpty)}</span>
   </a>
 </li>`;
     })
     .join('');
 
-  return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
-<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">${rowsHtml}</ul>`;
+  return `<h2 class="mt-10 ga-h2">Locations this week</h2>
+<ul class="mt-3 ga-surface rounded-md overflow-hidden" style="border: 1px solid var(--ga-border);">${rowsHtml}</ul>`;
 }
 
 function renderTrendSection(trend: TrendSeries[]): string {

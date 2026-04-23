@@ -232,6 +232,23 @@ export function layout({ title, body, dataCurrentAs, user, activeNav = null }: L
     .ga-icon-btn:hover { background-color: #f1f5f9; color: var(--ga-text); }
     .ga-icon-btn:focus-visible { outline: 2px solid transparent; box-shadow: var(--ga-focus); }
 
+    /* Clickable list row. Used in the dashboard locations list, settings
+       lists, and any other "tap the whole row to open" pattern. Separator
+       is a bottom border so the last row sits flush with the card edge. */
+    .ga-row {
+      cursor: pointer;
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid var(--ga-border);
+    }
+    .ga-row:last-child { border-bottom: none; }
+    .ga-row:hover      { background-color: var(--ga-bg); }
+    .ga-row:focus-visible {
+      background-color: var(--ga-bg);
+      outline: 2px solid transparent;
+      box-shadow: inset 0 0 0 2px var(--ga-blue);
+    }
+
     /* Focus ring — keyboard-only; respects :focus-visible */
     .ga-focus:focus-visible { outline: 2px solid transparent; box-shadow: var(--ga-focus); }
 
