@@ -569,15 +569,14 @@ export const DESIGN_TOKENS_STYLE = `<style>
     /* Selection color — gold */
     ::selection { background-color: var(--ga-gold); color: #1a1406; }
 
-    /* Logo sizing — desktop 60px, mobile (<640px) 44px. Width auto-scales
+    /* Logo sizing — desktop 80px, mobile (<640px) 56px. Width auto-scales
        from the PNG's 209x97 intrinsic aspect ratio. Per REQ-4 enrichment
-       (Batch 1.6): the logo is the strongest brand signal on every page —
-       earlier 40/28 read as tucked-away. 60px on desktop puts it in the
-       56-64px range approved by the client; 44px on mobile keeps the
-       hamburger-adjacent row intentional (not cramped). The header grows
-       from h-20 to h-24 to accommodate. */
-    .ga-logo-img { height: 60px; width: auto; display: block; }
+       sequence (Batch 1.6 → 60/44, this Batch → 80/56): client's repeat
+       direction was "make it bigger." Going beyond AC-4.2's 56-64 range
+       is intentional and documented. The header grows from h-24 to h-28
+       to keep ~16px breathing room top/bottom around the 80px logo. */
+    .ga-logo-img { height: 80px; width: auto; display: block; }
     @media (max-width: 639px) {
-      .ga-logo-img { height: 44px; }
+      .ga-logo-img { height: 56px; }
     }
   </style>`;

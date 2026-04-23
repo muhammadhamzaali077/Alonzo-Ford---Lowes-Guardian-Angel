@@ -255,15 +255,15 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
     return `<a href="${href}" class="${cls}"${activeStyle}>${label}</a>`;
   };
   // Logo: real asset at public/assets/lga-logo.png, served via /assets/*.
-  // Sizes live in design-tokens-css.ts under .ga-logo-img: 60px desktop,
-  // 44px mobile (<640px), per REQ-4 enrichment in Batch 1.6. The PNG
-  // intrinsic is 209x97; width scales from height.
+  // Sizes live in design-tokens-css.ts under .ga-logo-img: 80px desktop,
+  // 56px mobile (<640px). Header grows to h-28 (112px) to give the
+  // larger logo room. PNG intrinsic 209x97; width scales from height.
   const logo = `<a href="/" class="flex items-center gap-3 ga-transition ga-focus rounded" aria-label="Lowe's Guardian Angel — home">
       <img src="/assets/lga-logo.png" alt="Lowe's Guardian Angel" class="ga-logo-img">
     </a>`;
   return `  <header style="background-color: var(--ga-bg); border-bottom: 1px solid var(--ga-border);">
     <div class="mx-auto max-w-7xl px-4 sm:px-6">
-      <div class="flex items-center justify-between h-24">
+      <div class="flex items-center justify-between h-28">
         ${logo}
         <nav class="hidden md:flex items-center gap-2 text-sm" aria-label="Primary">
           ${navLink('/', 'Dashboard', 'dashboard')}

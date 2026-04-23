@@ -258,9 +258,9 @@ These requirements SUPPLEMENT the functional requirements above — they do not 
 
 **REQ-4 — LGA logo in header.** Official logo (angel wings + halo + wordmark) in the header, visibly branded without dominating.
 - **AC-4.1**: Logo renders via `<img src="/assets/lga-logo.png">` served from the static mount.
-- **AC-4.2**: Desktop header logo height is in the 56–64px range (enriched 2026-04-23 evening — original 32–40px range was too understated).
-- **AC-4.3**: Mobile (≤ 639px) header logo height is 44px (enriched 2026-04-23 evening — original 28px was too small).
-- **AC-4.4**: Header total height accommodates the logo without cramping; if the 56–64px logo pushes it past the existing `h-20`, the header grows to `h-22`..`h-24` accordingly.
+- **AC-4.2** *(revised 2026-04-23 late evening, post Batch 3 review)*: Desktop header logo height is **80px**. The prior 56–64px range (Batch 1.6) and the originally-shipped 40px (Batch 1) were both insufficient — client direction "make it bigger" came twice in succession. 80px is now the documented value; further bumps require a separate amendment.
+- **AC-4.3** *(revised same)*: Mobile (≤ 639px) header logo height is **56px** (was 44px in Batch 1.6, 28px in Batch 1). Stays proportional to the desktop bump.
+- **AC-4.4**: Header total height accommodates the logo without cramping. With the 80px logo, header is `h-28` (112px), giving ~16px breathing room top/bottom.
 
 **REQ-5 — No page reloads on stateful UI interactions.** Filter chip toggles, severity switches, date range changes, rule-editor tabs — every stateful interaction updates in place via htmx.
 - **AC-5.1**: Clicking any filter chip, severity switch, or date-range preset fires an htmx request with `HX-Request: true`; the browser's navigation history does NOT record a full-page navigation.
