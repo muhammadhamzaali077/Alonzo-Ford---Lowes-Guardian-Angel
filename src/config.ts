@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 const EnvSchema = z.object({
   DATABASE_PATH: z.string().default('./dev.db'),
-  OPENROUTER_API_KEY: z.string().min(1, 'OPENROUTER_API_KEY is required. Get one at https://openrouter.ai/keys.'),
+  // Only required when PROTOTYPE_STUB_CLASSIFIER=false (the real classifier
+  // path). In stub mode the AI pass never touches OpenRouter, so requiring
+  // this key at config-load would block deploys that are intentionally
+  // stub-only (e.g. Railway demo instances). Checked for presence in
+  // loadConfig() after the stub-mode default resolves.
+  OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().default('google/gemini-flash-lite-2.0'),
   BETTER_AUTH_SECRET: z.string().optional(),
   APP_URL: z.string().url().default('http://localhost:3000'),
@@ -49,6 +54,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   // allowing a deliberate opt-out for paid-model testing.
   if (parsed.PROTOTYPE_STUB_CLASSIFIER === undefined) {
     parsed.PROTOTYPE_STUB_CLASSIFIER = parsed.PROTOTYPE_MODE;
+  }
+  // When the real classifier is in play, OPENROUTER_API_KEY becomes mandatory.
+  // Stub mode doesn't touch OpenRouter so we leave the key unset there.
+  if (!parsed.PROTOTYPE_STUB_CLASSIFIER && !parsed.OPENROUTER_API_KEY) {
+    throw new Error(
+      'OPENROUTER_API_KEY is required when PROTOTYPE_STUB_CLASSIFIER=false. ' +
+      'Either set the key (https://openrouter.ai/keys) or leave PROTOTYPE_STUB_CLASSIFIER unset/true.',
+    );
   }
   assertDemoPasswordSafety(parsed);
   return parsed;

@@ -117,7 +117,15 @@ seedUsers();
 
 if (config.PROTOTYPE_MODE) {
   const seeded = seedIfEmpty();
-  if (seeded) logger.info('auto-seeded empty DB on cold boot');
+  if (seeded) {
+    logger.info('auto-seeded empty DB on cold boot');
+    // On a fresh DB the FIRST seedUsers() call (near the top of this file,
+    // before migrate's locations existed) could only insert users + default
+    // recipients. Now that loadOrgStructure has created locations, call
+    // seedUsers again so user_location_scope rows that were WHERE-EXISTS
+    // skipped the first time fill in. Idempotent.
+    seedUsers();
+  }
 
   // When the stub classifier is enabled, reset any T-Logs that ended in
   // `permanent_failure` from a prior real-classifier run so the stub pass
@@ -157,6 +165,47 @@ if (config.PROTOTYPE_MODE) {
     .catch((err) => {
       logger.error({ err: String(err) }, 'boot: AI pass failed');
     });
+}
+
+// Boot-seed invariant check — emits a single one-line summary of what's
+// in the DB after the full seed sequence completes. If any expected count
+// is zero the `warnings` field is non-empty so a fresh deploy failure is
+// diagnosable from logs alone (Railway audit 2026-04-23).
+logBootSeedSummary();
+
+function logBootSeedSummary(): void {
+  try {
+    const db = getDb();
+    const count = (table: string): number =>
+      (db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c;
+    const summary = {
+      locations:  count('locations'),
+      angels:     count('angels'),
+      individuals: count('individuals'),
+      managers:   count('managers'),
+      users:      count('users'),
+      recipients: count('digest_recipients'),
+      rules:      count('rule_config'),
+      tlogs:      count('t_logs'),
+    };
+    const warnings: string[] = [];
+    // In prototype mode we expect a fully populated DB after boot. In
+    // non-prototype mode the DB might legitimately be empty on first
+    // deploy — treat zeros as warnings, not errors, and let ops decide.
+    const expectNonZero: Array<keyof typeof summary> = config.PROTOTYPE_MODE
+      ? ['locations', 'angels', 'individuals', 'managers', 'users', 'recipients', 'rules', 'tlogs']
+      : ['rules'];
+    for (const key of expectNonZero) {
+      if (summary[key] === 0) warnings.push(`${key}=0`);
+    }
+    if (warnings.length > 0) {
+      logger.warn({ ...summary, warnings }, 'boot seed complete (with warnings)');
+    } else {
+      logger.info(summary, 'boot seed complete');
+    }
+  } catch (err) {
+    logger.error({ err: String(err) }, 'boot seed summary failed');
+  }
 }
 
 // prestageDemoFeedback() lives in src/admin/prestage-demo-feedback.ts so

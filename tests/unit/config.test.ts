@@ -2,8 +2,22 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { loadConfig } from '../../src/config.ts';
 
-test('config throws when OPENROUTER_API_KEY is missing', () => {
-  assert.throws(() => loadConfig({}), /OPENROUTER_API_KEY/);
+test('config does NOT throw on missing OPENROUTER_API_KEY when stub is active (Railway demo path)', () => {
+  // Empty env → PROTOTYPE_MODE defaults to true → STUB defaults to true →
+  // the real classifier is never called → the key is not required. This is
+  // the fix for the Railway crash-at-boot mode: previously an unset key
+  // prevented config from loading at all.
+  const cfg = loadConfig({});
+  assert.equal(cfg.PROTOTYPE_MODE, true);
+  assert.equal(cfg.PROTOTYPE_STUB_CLASSIFIER, true);
+  assert.equal(cfg.OPENROUTER_API_KEY, undefined);
+});
+
+test('config throws when OPENROUTER_API_KEY is missing AND stub is explicitly off', () => {
+  assert.throws(
+    () => loadConfig({ PROTOTYPE_STUB_CLASSIFIER: 'false' }),
+    /OPENROUTER_API_KEY is required/,
+  );
 });
 
 test('config defaults PROTOTYPE_MODE to true', () => {
