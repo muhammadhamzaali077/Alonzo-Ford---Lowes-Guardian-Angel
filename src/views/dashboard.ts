@@ -339,8 +339,11 @@ function renderLocationsList(
 }
 
 function renderTrendSection(trend: TrendSeries[]): string {
-  return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Compliance trend</h2>
-<div class="mt-3 bg-white border border-gray-200 rounded-md p-5">
+  return `<div class="mt-10">
+  <h2 class="ga-h2">Compliance trend</h2>
+  <p class="mt-1 ga-caption">Daily compliance score by location, last 7 days.</p>
+</div>
+<div class="mt-3 ga-surface rounded-md p-5 sm:p-6" style="border: 1px solid var(--ga-border);">
   ${renderTrendChart(trend)}
 </div>`;
 }
