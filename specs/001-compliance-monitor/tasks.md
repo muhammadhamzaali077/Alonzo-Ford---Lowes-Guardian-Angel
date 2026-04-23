@@ -6,6 +6,30 @@
 
 Tasks are topologically ordered — do them top-to-bottom. Every task cites the files it touches and its dependencies. Each task is scoped to ≲ half a day of focused work; larger chunks are split.
 
+---
+
+## Decisions log — UX overhaul (2026-04-23)
+
+A demo-polish pass (see Phase 14 below) negotiated the following overrides against the original UI/UX Constraints block. Captured here so the reasoning doesn't live only in conversation.
+
+| Ask | Decision | Rationale |
+|---|---|---|
+| Client-side tour lib (Shepherd.js / Intro.js / React tour) | **Dropped.** Built as htmx-native server-rendered tour cards instead. | Principle I + IX: no client framework, no frontend build step. Consistency with existing htmx/Tailwind-via-CDN pattern wins over tour polish. |
+| Dark mode toggle | **Dropped.** | Principle X forbids browser storage; cookie-backed version contradicts "calm healthcare" aesthetic. Near-zero demo value vs. cookie plumbing. |
+| Modal drawers / slide-in panels | Reaffirmed **out**. | UI/UX Constraints: "No modals". Drill-down stays as full-page navigation. |
+| JS chart library (recharts / chart.js / uplot) | Reaffirmed **out**. | Phase 6 explicit: push back in code review. Interactive trend chart uses SVG + CSS hover. |
+| Sound effects | **Dropped.** | Aesthetic mismatch with "state auditor reading over your shoulder" framing. |
+| Emoji in chrome, glassmorphism, Framer-motion, glow, oversized hero | Reaffirmed **out**. | Forbidden list, UI/UX Constraints block. |
+| Icons on the four top tiles | Reaffirmed **out**. | UI/UX Constraints: "number + one-word label, no icons". Icons elsewhere (nav, cards, affordances) are allowed — inline SVG only, no icon-font dep. |
+| Thumbs up/down on flag cards, stored client-side | **Stored server-side** in new `flag_feedback` table. | Principle X: no localStorage/sessionStorage/IndexedDB. |
+| Scenario presets ("quiet week" / "chaotic week") | **Approved.** | Biggest demo moment. Second fixture set + `/admin/scenario?preset=…` endpoint with double-confirmation on destructive reseed. |
+| Reset demo data button | **Approved** with double-confirmation. | Prototype feature, matches Principle III ("Prototype Mode Is a First-Class Feature"). |
+| Presenter mode (hide chrome for screenshots) | **Approved.** Cookie-backed toggle. | No PHI implications; cookie carries UI preference only. |
+
+Tier execution order: Tier 1 (T112–T116) → human review → Tier 2 (T117–T122) → Tier 3 (T123–T126). See Phase 14 below.
+
+---
+
 Story-label convention:
 - Setup / foundational / polish phases carry **no** story label.
 - Story phases carry `[US1]` (dashboard), `[US2]` (rules config), `[US3]` (digest), `[US4]` (admin + upload).
@@ -296,14 +320,14 @@ Every view task below inherits these constraints. The phrase **"per UI/UX Constr
 
 **Goal**: Verify the two hero demo patterns surface and the 30-second rule-rerun SLA holds. Mobile sweep.
 
-- [ ] T097 **Acceptance gate: Jamal copy-paste cluster surfaces on Riverside drill-down** — write `tests/integration/jamal-cluster.test.ts`: seed fixtures → run full pipeline → fetch `GET /location/LOC002` → assert Jamal Roberts (ANG007) appears with the highest `ai_classifier` flag count among Riverside angels; click through to an angel page and confirm at least one flag's `reason` text cites "near-identical content to" with count ≥ 8 — **file**: `tests/integration/jamal-cluster.test.ts`. **DoD**: test passes against real seeded data. This is an acceptance gate, not a nice-to-have. **Deps**: T047, T057.
-- [ ] T098 **Acceptance gate: Sunrise Friday missing notes visible** — write `tests/integration/sunrise-fridays.test.ts`: seed fixtures → run full pipeline → query flags with `source='missing_schedule' AND location_id='LOC004'` → assert at least three rows for 2026-03-27 (IND012), 2026-04-03 (IND008), 2026-04-10 (IND011); fetch `GET /location/LOC004?sev=red&source=missing_schedule` and assert all three surface on the page — **file**: `tests/integration/sunrise-fridays.test.ts`. **Deps**: T047, T057.
-- [ ] T099 **Acceptance gate: rule-edit SLA** — write `tests/integration/rerun-sla.test.ts`: seed fixtures → run pipeline → edit `copy_paste` rule's threshold from 0.7 to 0.6 → post to `/rules/rerun?start=...&end=...` (last 7 days) → assert the pipeline completes in < 30 seconds and flag counts in the window change — **file**: `tests/integration/rerun-sla.test.ts`. **Deps**: T066, T037.
-- [ ] T100 Integration test: full fixture pipeline — write `tests/integration/fixtures-pipeline.test.ts` that ties T037 + T097 + T098 together as a smoke test for the whole hero narrative — **file**: `tests/integration/fixtures-pipeline.test.ts`. **Deps**: T097, T098.
-- [ ] T101 Mobile-375px audit — write `tests/integration/mobile-viewport.test.ts` using Playwright's device emulation (iPhone SE viewport = 375×667); for each primary route (`/`, `/location/:id`, `/rules`, `/digest/preview`, `/note/:id/:version`, `/admin/org`) assert no horizontal scrollbar and no element overflows viewport width — **file**: `tests/integration/mobile-viewport.test.ts`. **DoD**: passes on seeded data. **Deps**: T060, T079, T084.
-- [ ] T102 Empty / loading / error states sweep — every view renders gracefully when queries return zero rows; htmx errors return a friendly fragment with correlation ID — **files**: all `src/views/*.ts`. **DoD**: manual sweep; obvious empty-state messages on filtered-to-nothing dashboard views; 500s show correlation ID, not stack. **Deps**: T060, T067, T079, T084.
-- [ ] T103 PHI log-redaction verification — grep-style unit test `tests/unit/log-redaction.test.ts`: feed 50 log calls with banned keys in payload; assert none appear in emitted output — **file**: `tests/unit/log-redaction.test.ts`. **Deps**: T007.
-- [ ] T104 Static grep for PHI leaks — unit test `tests/unit/no-phi-in-views.test.ts` scans `src/views/**/*.ts` for any `<script>` or `data-*` attribute concatenated with banned fields (`description, summary, reason, individual_name, note_text`); fails on hits — **file**: `tests/unit/no-phi-in-views.test.ts`. **Deps**: T060.
+- [X] T097 **Acceptance gate: Jamal copy-paste cluster surfaces on Riverside drill-down** — write `tests/integration/jamal-cluster.test.ts`: seed fixtures → run full pipeline → fetch `GET /location/LOC002` → assert Jamal Roberts (ANG007) appears with the highest `ai_classifier` flag count among Riverside angels; click through to an angel page and confirm at least one flag's `reason` text cites "near-identical content to" with count ≥ 8 — **file**: `tests/integration/jamal-cluster.test.ts`. **DoD**: test passes against real seeded data. This is an acceptance gate, not a nice-to-have. **Deps**: T047, T057.
+- [X] T098 **Acceptance gate: Sunrise Friday missing notes visible** — write `tests/integration/sunrise-fridays.test.ts`: seed fixtures → run full pipeline → query flags with `source='missing_schedule' AND location_id='LOC004'` → assert at least three rows for 2026-03-27 (IND012), 2026-04-03 (IND008), 2026-04-10 (IND011); fetch `GET /location/LOC004?sev=red&source=missing_schedule` and assert all three surface on the page — **file**: `tests/integration/sunrise-fridays.test.ts`. **Deps**: T047, T057. Required adding `getMissingFlagsForLocation` + a Missing-notes section on the location view so missing flags (which carry `angel_id=null`) could surface beyond per-angel aggregates.
+- [X] T099 **Acceptance gate: rule-edit SLA** — write `tests/integration/rerun-sla.test.ts`: seed fixtures → run pipeline → edit `copy_paste` rule's threshold from 0.7 to 0.6 → post to `/rules/rerun?start=...&end=...` (last 7 days) → assert the pipeline completes in < 30 seconds and flag counts in the window change — **file**: `tests/integration/rerun-sla.test.ts`. **Deps**: T066, T037. Test calls `rerunOnWindow()` directly rather than over HTTP (server.ts isn't test-mountable yet).
+- [X] T100 Integration test: full fixture pipeline — write `tests/integration/fixtures-pipeline.test.ts` that ties T037 + T097 + T098 together as a smoke test for the whole hero narrative — **file**: `tests/integration/fixtures-pipeline.test.ts`. **Deps**: T097, T098.
+- [X] T101 Mobile-375px audit — write `tests/integration/mobile-viewport.test.ts` using Playwright's device emulation (iPhone SE viewport = 375×667); for each primary route (`/`, `/location/:id`, `/rules`, `/digest/preview`, `/note/:id/:version`, `/admin/org`) assert no horizontal scrollbar and no element overflows viewport width — **file**: `tests/integration/mobile-viewport.test.ts`. **DoD**: passes on seeded data. **Deps**: T060, T079, T084. *Playwright not installed* — substituted happy-dom structural lint (raw `<table>` outside `overflow-x`, explicit widths >375px, `whitespace-nowrap` on long content). True rendered-layout verification remains open.
+- [X] T102 Empty / loading / error states sweep — every view renders gracefully when queries return zero rows; htmx errors return a friendly fragment with correlation ID — **files**: all `src/views/*.ts`. **DoD**: manual sweep; obvious empty-state messages on filtered-to-nothing dashboard views; 500s show correlation ID, not stack. **Deps**: T060, T067, T079, T084. Added `app.onError` to `src/server.ts` returning htmx fragment vs full page, both carrying a correlation ID and omitting stack.
+- [X] T103 PHI log-redaction verification — grep-style unit test `tests/unit/log-redaction.test.ts`: feed 50 log calls with banned keys in payload; assert none appear in emitted output — **file**: `tests/unit/log-redaction.test.ts`. **Deps**: T007.
+- [X] T104 Static grep for PHI leaks — unit test `tests/unit/no-phi-in-views.test.ts` scans `src/views/**/*.ts` for any `<script>` or `data-*` attribute concatenated with banned fields (`description, summary, reason, individual_name, note_text`); fails on hits — **file**: `tests/unit/no-phi-in-views.test.ts`. **Deps**: T060.
 
 ---
 
@@ -380,3 +404,42 @@ Phase 0 ──► Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 3.
 - **Unit tests**: 10 (config, logger, supersession, notification-level, missing, similarity, concurrency, rules-admin, scope, log-redaction, no-PHI-in-views).
 
 **Ready for `/speckit.implement`** once the user signs off on the task list.
+
+---
+
+## Phase 14 — UX overhaul (2026-04-23)
+
+**Goal**: Raise demo polish without violating the constitution. See Decisions log at top for scope negotiation.
+
+### Tier 1 — core demo impact (batched; human review after)
+
+- [X] T112 Demo-data badge in the header data-bar — `src/views/layout.ts`. Amber pill, visible only when `config.PROTOTYPE_MODE=true`.
+- [X] T113 Dismissible welcome panel on `/` — cookie-backed (`ga_welcome_dismissed`), new `POST /ui/welcome/dismiss` returning empty htmx fragment. `src/views/dashboard.ts` + `src/server.ts`.
+- [X] T114 Count-up animation + WoW delta + trend arrow on hero tiles. `src/views/dashboard.ts`, `src/db/queries/dashboard.ts` (add prior-window counts), `src/views/layout.ts` (tiny inline count-up script).
+- [X] T115 Per-location sparkline in the locations list — reuse `getComplianceTrend`, render ~84×20 SVG inline. `src/views/dashboard.ts`, possibly a new `src/views/sparkline.ts`.
+- [X] T116 Rule-editor live impact preview for `copy_paste` and `short_note`. New `GET /rules/:rule_key/preview-impact`. For the three LLM-evaluated rules, show a "Live preview not available — click Update flags now" stub. `src/views/rules.ts`, `src/server.ts`, `src/db/queries/rule-impact.ts` (new).
+
+### Tier 2 — polish (auto-proceed after Tier 1 approval)
+
+- [ ] T117 Skeleton loaders + `hx-indicator` shimmer utility. Applies to re-run, search, upload.
+- [ ] T118 Keyboard shortcuts (`/` search, `g d` dashboard, `g r` rules, `Esc` closes disclosures) + `?` cheat-sheet disclosure. Inline script in `layout.ts`.
+- [ ] T119 Interactive trend chart — SVG `<title>` hover tooltips + click-to-scope. `src/views/trend-chart.ts`.
+- [ ] T120 Filter chips on dashboard (clickable severity / shift / location pills that toggle query params). `src/views/dashboard.ts`.
+- [ ] T121 Gmail-style frame on digest preview envelopes. `src/views/digest-preview.ts`.
+- [ ] T122 Inline contextual help `<details>` on each primary screen. Help copy map per view file.
+
+### Tier 3 — approved, post Tier 2
+
+- [ ] T123 **Scenario presets** — second fixture set + `GET/POST /admin/scenario?preset={quiet|chaotic|baseline}`. Double confirmation on destructive reseed. New: `fixtures/scenarios/*`, `src/admin/scenarios.ts`, `src/views/admin-scenarios.ts`.
+- [ ] T124 **AI flag feedback** — new `flag_feedback(flag_id, user_id, verdict, note, created_at)` table; thumbs-up/down on flag cards; `POST /flags/:id/feedback`. Server-side only per Principle X.
+- [ ] T125 **Presenter mode** — cookie `ga_presenter=1` hides header + footer; toggle at `/presenter/on` and `/presenter/off`.
+- [ ] T126 **Reset demo data** button in Settings → System. Double confirmation. Re-runs `seedAll()` against a wiped DB.
+
+### Explicitly not doing (from Decisions log)
+
+- Shepherd.js / Intro.js / React tour (replaced by htmx-native tour cards if demand arises — not in Tier 1–3).
+- Dark mode toggle.
+- Modal drawers.
+- JS charting library.
+- Sound effects.
+

@@ -1,18 +1,21 @@
 // Dashboard top-level view. Four tiles, locations list, trend chart, filter
 // disclosure + "Preview this week's email" anchor (per UI/UX decision #3).
 
-import type { LocationRow, OverallCounts } from '../db/queries/dashboard.js';
+import type { LocationRow, OverallCountsWithPrior } from '../db/queries/dashboard.js';
 import type { TrendSeries } from '../db/queries/compliance-score.js';
 import type { WindowRange } from '../lib/time.js';
 import { escapeHtml } from './layout.js';
 import { rollupPill, locationTypeLabel } from './ui.js';
 import { renderTrendChart } from './trend-chart.js';
+import { renderSparkline, type SparklinePoint } from './sparkline.js';
 
 export interface DashboardViewData {
   window: WindowRange;
-  overall: OverallCounts;
+  overall: OverallCountsWithPrior;
   locations: LocationRow[];
   trend: TrendSeries[];
+  /** Map of location_id → series for the sparkline in its row. */
+  sparklines: Map<string, SparklinePoint[]>;
   filters: {
     start?: string;
     end?: string;
@@ -20,19 +23,44 @@ export interface DashboardViewData {
     shift?: string;
     locationId?: string;
   };
+  /** True when the user hasn't dismissed the welcome card (cookie unset). */
+  showWelcome: boolean;
 }
 
 export function renderDashboard(data: DashboardViewData): string {
   return `
 <section>
+  ${data.showWelcome ? renderWelcomePanel() : ''}
   ${renderTitleRow(data)}
   ${renderFilter(data)}
   ${renderTiles(data.overall)}
-  ${renderLocationsList(data.locations)}
+  ${renderLocationsList(data.locations, data.sparklines)}
   ${renderTrendSection(data.trend)}
 </section>
 ${renderMobileFilterScrollScript()}
 `;
+}
+
+function renderWelcomePanel(): string {
+  return `<aside id="welcome-panel" class="mb-4 bg-white border border-blue-200 rounded-md p-4 sm:p-5">
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h2 class="text-base font-semibold text-gray-900">Welcome to Guardian Angel</h2>
+      <p class="mt-1 text-sm text-gray-700">This is the compliance dashboard for Lowe's Guardian Angel. Red, yellow, and green flags cover missing shift notes and content that falls outside your rules. Everything on this screen is synthetic demo data — click any location to drill down, or open <a href="/rules" class="text-blue-600 hover:underline">Rules</a> to tune how flags are generated.</p>
+    </div>
+    <button type="button"
+            hx-post="/ui/welcome/dismiss"
+            hx-target="#welcome-panel"
+            hx-swap="outerHTML"
+            aria-label="Dismiss welcome message"
+            class="shrink-0 inline-flex items-center justify-center min-h-[32px] min-w-[32px] -mt-1 -mr-1 p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 10M15 5L5 15"/>
+      </svg>
+      <span class="sr-only">Dismiss</span>
+    </button>
+  </div>
+</aside>`;
 }
 
 function renderTitleRow(data: DashboardViewData): string {
@@ -102,23 +130,84 @@ function renderSeverityChip(value: string, label: string, selected: string | und
 </label>`;
 }
 
-function renderTiles(o: OverallCounts): string {
+function renderTiles(o: OverallCountsWithPrior): string {
   return `<div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-  ${tile(String(o.red), 'Red')}
-  ${tile(String(o.yellow), 'Yellow')}
-  ${tile(String(o.missing), 'Missing')}
-  ${tile(`${o.compliance_pct.toFixed(1)}%`, 'Compliance')}
+  ${tile({ label: 'Red',        current: o.red,            prior: o.prior.red,        higherIsWorse: true })}
+  ${tile({ label: 'Yellow',     current: o.yellow,         prior: o.prior.yellow,     higherIsWorse: true })}
+  ${tile({ label: 'Missing',    current: o.missing,        prior: o.prior.missing,    higherIsWorse: true })}
+  ${tile({ label: 'Compliance', current: o.compliance_pct, prior: o.prior.compliance_pct, higherIsWorse: false, unit: '%', decimals: 1, complianceArrow: true })}
 </div>`;
 }
 
-function tile(value: string, label: string): string {
+interface TileProps {
+  label: string;
+  current: number;
+  prior: number;
+  /** Flags go up = bad; compliance goes up = good. Colors the delta accordingly. */
+  higherIsWorse: boolean;
+  unit?: string;
+  decimals?: number;
+  complianceArrow?: boolean;
+}
+
+function tile(p: TileProps): string {
+  const decimals = p.decimals ?? 0;
+  const unit = p.unit ?? '';
+  const displayFinal = decimals > 0 ? p.current.toFixed(decimals) : String(Math.round(p.current));
+  // Hook for the count-up script in layout.ts. It reads data-count-to and
+  // animates the textContent from 0 → target over ~700ms on first paint.
+  const countTo = decimals > 0 ? p.current.toFixed(decimals) : String(Math.round(p.current));
+
+  const deltaHtml = renderDelta(p);
+  const arrow = p.complianceArrow ? renderComplianceArrow(p.current - p.prior) : '';
+
   return `<div class="bg-white border border-gray-200 rounded-md p-5">
-  <div class="text-3xl font-semibold tnum text-gray-900">${escapeHtml(value)}</div>
-  <div class="mt-1 text-sm text-gray-600">${escapeHtml(label)}</div>
+  <div class="flex items-baseline gap-2">
+    <div class="text-3xl font-semibold tnum text-gray-900"
+         data-count-to="${escapeHtml(countTo)}"
+         data-count-unit="${escapeHtml(unit)}"
+         data-count-decimals="${decimals}"
+         aria-label="${escapeHtml(p.label)}: ${escapeHtml(displayFinal + unit)}">${escapeHtml(displayFinal + unit)}</div>
+    ${arrow}
+  </div>
+  <div class="mt-1 flex items-baseline justify-between gap-2">
+    <div class="text-sm text-gray-600">${escapeHtml(p.label)}</div>
+    ${deltaHtml}
+  </div>
 </div>`;
 }
 
-function renderLocationsList(rows: LocationRow[]): string {
+function renderDelta(p: TileProps): string {
+  const diff = p.current - p.prior;
+  if (!Number.isFinite(diff) || Math.abs(diff) < (p.decimals && p.decimals > 0 ? 0.05 : 0.5)) {
+    return `<span class="text-xs text-gray-500" title="No change vs. prior period">— vs last period</span>`;
+  }
+  const isWorse = p.higherIsWorse ? diff > 0 : diff < 0;
+  const color = isWorse ? 'text-red-700' : 'text-green-700';
+  const sign = diff > 0 ? '+' : '−';
+  const mag = p.decimals && p.decimals > 0 ? Math.abs(diff).toFixed(p.decimals) : String(Math.round(Math.abs(diff)));
+  const unit = p.unit ?? '';
+  return `<span class="text-xs font-medium ${color} tnum" title="Change vs. prior equal-length period">${sign}${escapeHtml(mag + unit)} vs last period</span>`;
+}
+
+function renderComplianceArrow(delta: number): string {
+  // Compliance is a percentage; ignore tiny wobble.
+  if (Math.abs(delta) < 0.1) {
+    return `<svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Flat vs. last period">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h12"/>
+    </svg>`;
+  }
+  if (delta > 0) {
+    return `<svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Up vs. last period">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 16V4M5 9l5-5 5 5"/>
+    </svg>`;
+  }
+  return `<svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Down vs. last period">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 4v12M5 11l5 5 5-5"/>
+  </svg>`;
+}
+
+function renderLocationsList(rows: LocationRow[], sparklines: Map<string, SparklinePoint[]>): string {
   if (rows.length === 0) {
     return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
 <p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No locations configured yet. Add one in Settings.</p>`;
@@ -134,6 +223,8 @@ function renderLocationsList(rows: LocationRow[]): string {
         .filter(Boolean)
         .join(' · ');
       const countsOrEmpty = counts || 'No flags';
+      const sparkPoints = sparklines.get(r.location_id) ?? [];
+      const sparkHtml = renderSparkline(sparkPoints, { label: `${r.location_name} compliance trend` });
       return `<li>
   <a href="/location/${encodeURIComponent(r.location_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
@@ -141,7 +232,10 @@ function renderLocationsList(rows: LocationRow[]): string {
       <span class="text-sm font-medium text-gray-900 truncate">${escapeHtml(r.location_name)}</span>
       <span class="hidden sm:inline text-xs text-gray-500">${escapeHtml(locationTypeLabel(r.location_type))}</span>
     </div>
-    <span class="text-sm text-gray-600 tnum shrink-0">${escapeHtml(countsOrEmpty)}</span>
+    <div class="flex items-center gap-3 shrink-0">
+      <span class="hidden sm:inline" aria-hidden="true">${sparkHtml}</span>
+      <span class="text-sm text-gray-600 tnum">${escapeHtml(countsOrEmpty)}</span>
+    </div>
   </a>
 </li>`;
     })

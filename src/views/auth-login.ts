@@ -8,9 +8,15 @@
 import { config } from '../config.js';
 import { escapeHtml } from './layout.js';
 
+export type LoginErrorCode =
+  | 'invalid_credentials'
+  | 'google_hd_rejected'
+  | 'google_unprovisioned'
+  | 'google_failed';
+
 export interface AuthLoginViewOptions {
   googleEnabled: boolean;
-  error?: 'invalid_credentials' | 'google_hd_rejected' | null;
+  error?: LoginErrorCode | null;
   prefillEmail: string;
   prefillPassword: string;
 }
@@ -80,10 +86,12 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
 </html>`;
 }
 
-function renderError(error: NonNullable<AuthLoginViewOptions['error']>): string {
+function renderError(error: LoginErrorCode): string {
   const msg =
     error === 'invalid_credentials' ? "That email and password don't match an account."
     : error === 'google_hd_rejected' ? 'This app is restricted to lowesguardianangel.com accounts. Sign in with a company account.'
+    : error === 'google_unprovisioned' ? "Your company account isn't set up for Guardian Angel yet. Ask your admin to add you."
+    : error === 'google_failed' ? 'Sign-in with Google failed. Try again, or use the email and password form.'
     : 'Something went wrong. Try again.';
   return `<div class="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-900">${escapeHtml(msg)}</div>`;
 }

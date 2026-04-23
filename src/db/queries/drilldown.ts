@@ -130,6 +130,46 @@ export function getFlagsForDrilldown(
     .all({ locationId, angelId, individualId, start, end }) as FlaggedNoteRow[];
 }
 
+export interface MissingFlagRow {
+  individual_id: string;
+  individual_name: string;
+  scheduled_shift_date: string;
+  scheduled_shift_name: string;
+  reason: string;
+}
+
+/**
+ * Missing-note flags for a location, used by the location-drill-down page's
+ * "Missing notes" section. These flags never carry an `angel_id` (there is
+ * no shift author when no note was written), so they don't surface in the
+ * per-angel aggregate rollup. Surfaced here so managers can see which
+ * date/individual/shift has no submitted documentation.
+ */
+export function getMissingFlagsForLocation(
+  locationId: string,
+  start: string,
+  end: string,
+  db: BetterSqliteDatabase = getDb(),
+): MissingFlagRow[] {
+  return db
+    .prepare(
+      `SELECT f.individual_id,
+              i.name AS individual_name,
+              f.scheduled_shift_date,
+              f.scheduled_shift_name,
+              f.reason
+         FROM flags f
+         JOIN individuals i ON i.id = f.individual_id
+        WHERE f.location_id = @locationId
+          AND f.source = 'missing_schedule'
+          AND f.resolution = 'open'
+          AND f.scheduled_shift_date BETWEEN @start AND @end
+          AND i.deleted_at IS NULL
+        ORDER BY f.scheduled_shift_date DESC, i.name ASC`,
+    )
+    .all({ locationId, start, end }) as MissingFlagRow[];
+}
+
 // -------------------------------------------------------------------------------------------------
 // Simple name lookups (avoids separate joins in view code)
 // -------------------------------------------------------------------------------------------------

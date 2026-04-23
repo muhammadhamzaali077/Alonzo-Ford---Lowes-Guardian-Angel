@@ -39,6 +39,10 @@ export interface OverallCounts {
   total_expected: number;
 }
 
+export interface OverallCountsWithPrior extends OverallCounts {
+  prior: OverallCounts;
+}
+
 /**
  * The scope is applied as a list of allowed location_ids. Callers pass
  * `scope.locations` from the request-scope middleware. 'all' means no filter.
@@ -166,6 +170,37 @@ function daysBetween(start: string, end: string): number {
   const s = new Date(`${start}T00:00:00Z`).getTime();
   const e = new Date(`${end}T00:00:00Z`).getTime();
   return Math.floor((e - s) / (24 * 3600 * 1000)) + 1;
+}
+
+/**
+ * Returns the [priorStart, priorEnd] pair of dates that is "the same length
+ * immediately before" [start, end]. Used for WoW delta computation on the
+ * hero tiles.
+ */
+export function priorWindow(start: string, end: string): { start: string; end: string } {
+  const days = daysBetween(start, end);
+  const dayMs = 24 * 3600 * 1000;
+  const startMs = Date.UTC(
+    Number(start.slice(0, 4)),
+    Number(start.slice(5, 7)) - 1,
+    Number(start.slice(8, 10)),
+  );
+  const priorEnd = new Date(startMs - dayMs).toISOString().slice(0, 10);
+  const priorStart = new Date(startMs - days * dayMs).toISOString().slice(0, 10);
+  return { start: priorStart, end: priorEnd };
+}
+
+/** Like `getOverallCounts` but also returns counts for the equal-length prior window. */
+export function getOverallCountsWithPrior(
+  scope: LocationScope,
+  start: string,
+  end: string,
+  db: BetterSqliteDatabase = getDb(),
+): OverallCountsWithPrior {
+  const current = getOverallCounts(scope, start, end, db);
+  const pw = priorWindow(start, end);
+  const prior = getOverallCounts(scope, pw.start, pw.end, db);
+  return { ...current, prior };
 }
 
 function clampPct(n: number): number {

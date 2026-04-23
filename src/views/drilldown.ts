@@ -2,7 +2,7 @@
 // same pattern: breadcrumb, page heading, list of next-level items with
 // rollup pills and flag counts.
 
-import type { AngelAggregateRow, FlaggedNoteRow, IndividualAggregateRow } from '../db/queries/drilldown.js';
+import type { AngelAggregateRow, FlaggedNoteRow, IndividualAggregateRow, MissingFlagRow } from '../db/queries/drilldown.js';
 import type { WindowRange } from '../lib/time.js';
 import { escapeHtml } from './layout.js';
 import { rollupPill, renderBreadcrumb, displayCategoryLabel, type DisplayCategory } from './ui.js';
@@ -10,6 +10,7 @@ import { rollupPill, renderBreadcrumb, displayCategoryLabel, type DisplayCategor
 export interface LocationViewData {
   location: { id: string; name: string; type: string };
   angels: AngelAggregateRow[];
+  missingFlags: MissingFlagRow[];
   window: WindowRange;
 }
 
@@ -40,6 +41,8 @@ ${data.angels
   .join('')}
 </ul>`;
 
+  const missingHtml = renderMissingFlagsSection(data.missingFlags);
+
   return `<section>
   ${crumb}
   <div class="mt-2">
@@ -48,7 +51,39 @@ ${data.angels
   </div>
   <h2 class="mt-6 text-lg font-medium text-gray-900">Angels at this location</h2>
   ${listHtml}
+  ${missingHtml}
 </section>`;
+}
+
+function renderMissingFlagsSection(missing: MissingFlagRow[]): string {
+  if (missing.length === 0) return '';
+  const items = missing
+    .map((m) => {
+      const date = formatDateWithWeekday(m.scheduled_shift_date);
+      return `<li class="px-5 py-3 flex items-center justify-between gap-3 min-h-[44px]">
+    <div class="min-w-0">
+      <div class="text-sm font-medium text-gray-900">${escapeHtml(m.individual_name)}</div>
+      <div class="text-xs text-gray-600">${escapeHtml(date)} · ${escapeHtml(m.scheduled_shift_name)} shift</div>
+    </div>
+    <span class="shrink-0 inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Missing note</span>
+  </li>`;
+    })
+    .join('');
+
+  return `<h2 class="mt-8 text-lg font-medium text-gray-900">Missing notes</h2>
+  <p class="mt-1 text-sm text-gray-600">${missing.length} shift${missing.length === 1 ? '' : 's'} with no submitted documentation in this period.</p>
+  <ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">${items}</ul>`;
+}
+
+function formatDateWithWeekday(isoDate: string): string {
+  // Expect YYYY-MM-DD. Build a Date at noon UTC so the weekday doesn't tip
+  // across midnight on import-time machines far from UTC.
+  const m = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return isoDate;
+  const [, y, mo, d] = m;
+  const dt = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), 12));
+  const weekday = dt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  return `${weekday} ${isoDate}`;
 }
 
 export interface AngelViewData {

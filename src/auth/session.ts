@@ -73,6 +73,29 @@ export function deleteSession(sessionId: string, db: BetterSqliteDatabase = getD
   db.prepare('DELETE FROM user_sessions WHERE id = ?').run(sessionId);
 }
 
+/**
+ * Lookup helper shared by the demo-credentials path and the Google OAuth
+ * callback. Returns null when the email isn't provisioned — provisioning
+ * is deliberately manual (seed script / Settings), not self-signup.
+ */
+export function getUserByEmail(
+  email: string,
+  db: BetterSqliteDatabase = getDb(),
+): SessionUser | null {
+  const row = db
+    .prepare('SELECT id, email, name, role FROM users WHERE email = ?')
+    .get(email.trim().toLowerCase()) as
+    | { id: string; email: string; name: string | null; role: string }
+    | undefined;
+  if (!row) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name ?? row.email,
+    role: row.role as SessionUser['role'],
+  };
+}
+
 export function purgeExpiredSessions(db: BetterSqliteDatabase = getDb()): number {
   const info = db.prepare("DELETE FROM user_sessions WHERE expires_at <= datetime('now')").run();
   return info.changes;

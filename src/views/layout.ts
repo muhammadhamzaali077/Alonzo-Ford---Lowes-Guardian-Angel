@@ -12,6 +12,8 @@
 //   - All severity pills carry a text label, not color alone.
 //   - Data-current-as-of bar renders between header and main on every page.
 
+import { config } from '../config.js';
+
 export type NavKey = 'dashboard' | 'rules' | 'settings' | null;
 
 export type UserRole = 'admin' | 'leadership' | 'manager' | 'demo';
@@ -54,8 +56,47 @@ ${showChrome ? renderHeader({ user: user!, activeNav }) : ''}
 ${showChrome && dataCurrentAs ? renderDataBar(dataCurrentAs) : ''}
   <main id="main" class="mx-auto max-w-7xl px-4 sm:px-6 py-6">${body}</main>
 ${showChrome ? renderFooter() : ''}
+${showChrome ? renderCountUpScript() : ''}
 </body>
 </html>`;
+}
+
+/**
+ * Tiny inline count-up for tile numbers. Looks for `[data-count-to]` on
+ * first paint and eases from 0 → target over ~700 ms. Skipped when the
+ * user has `prefers-reduced-motion`. This is a DOM utility, not a
+ * framework — same category as the htmx tag already loaded above.
+ */
+function renderCountUpScript(): string {
+  return `<script>
+(function () {
+  if (typeof document === 'undefined') return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) return;
+  var els = document.querySelectorAll('[data-count-to]');
+  if (!els.length) return;
+  var duration = 700;
+  els.forEach(function (el) {
+    var raw = el.getAttribute('data-count-to') || '0';
+    var unit = el.getAttribute('data-count-unit') || '';
+    var decimals = parseInt(el.getAttribute('data-count-decimals') || '0', 10) || 0;
+    var target = parseFloat(raw);
+    if (!isFinite(target)) return;
+    var start = performance.now();
+    el.textContent = (0).toFixed(decimals) + unit;
+    function tick(now) {
+      var t = Math.min(1, (now - start) / duration);
+      // easeOutCubic
+      var eased = 1 - Math.pow(1 - t, 3);
+      var value = target * eased;
+      el.textContent = value.toFixed(decimals) + unit;
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = target.toFixed(decimals) + unit;
+    }
+    requestAnimationFrame(tick);
+  });
+})();
+</script>`;
 }
 
 function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey }): string {
@@ -110,9 +151,17 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
 }
 
 function renderDataBar(dataCurrentAs: string): string {
+  const badge = config.PROTOTYPE_MODE
+    ? `      <span class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900" title="Synthetic data — no real individuals">
+        <span class="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+        Demo data
+        <span class="hidden sm:inline text-amber-800 font-normal">· synthetic, no real individuals</span>
+      </span>`
+    : '';
   return `  <div class="bg-white border-b border-gray-200">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-2 text-sm text-gray-500">
-      Data current as of ${escapeHtml(dataCurrentAs)}
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-2 text-sm text-gray-500 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+      <span>Data current as of ${escapeHtml(dataCurrentAs)}</span>
+${badge}
     </div>
   </div>`;
 }

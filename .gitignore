@@ -26,6 +26,9 @@ dev.db
 .idea/
 Thumbs.db
 
+# Claude Code local settings (user-specific, not shared)
+.claude/settings.local.json
+
 # Logs
 logs/
 *.log

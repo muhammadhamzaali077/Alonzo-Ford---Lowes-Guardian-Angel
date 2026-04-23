@@ -17,9 +17,18 @@ import {
   clearSessionCookie,
   createSession,
   deleteSession,
+  getUserByEmail,
   readSessionCookie,
   setSessionCookie,
 } from './auth/session.js';
+import {
+  buildAuthUrl,
+  exchangeCodeForTokens,
+  generateState,
+  redirectUriFromConfig,
+  verifyIdToken,
+} from './auth/google-oauth.js';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { getDb } from './db/client.js';
 import { migrate } from './db/migrate.js';
 import { MAX_UPLOAD_BYTES } from './ingestion/excel-upload.js';
@@ -53,16 +62,18 @@ import {
   getIndividualAggregatesForAngel,
   getIndividualMeta,
   getLocationMeta,
+  getMissingFlagsForLocation,
 } from './db/queries/drilldown.js';
 import {
   getLocationAggregates,
-  getOverallCounts,
+  getOverallCountsWithPrior,
 } from './db/queries/dashboard.js';
 import { getComplianceTrend } from './db/queries/compliance-score.js';
 import { getAnchorDate, getLastIngestedAt } from './db/queries/last-refresh.js';
 import { getFlagsForNote, getNoteDetail } from './db/queries/note.js';
 import { rerunOnWindow, runAiPass, runDeterministicPass } from './flagging/pipeline.js';
 import { editRule, getActiveRule, listActiveRules, listRuleHistory, revertRule } from './rules/rules-admin.js';
+import { previewCopyPaste, previewShortNote, type ImpactPreview } from './db/queries/rule-impact.js';
 import { seedIfEmpty } from './jobs/seed.js';
 import { humanizeSince, resolveWindowFromAnchor, type WindowPreset } from './lib/time.js';
 import { logger } from './lib/logger.js';
@@ -75,7 +86,7 @@ import { renderDigestPreview } from './views/digest-preview.js';
 import { previewStore } from './digest/preview-store.js';
 import { runWeeklyDigest } from './jobs/weekly-digest.js';
 import { renderNoteDetail } from './views/note-detail.js';
-import { renderRuleEditForm, renderRulesHistory, renderRulesList, type RerunFragmentData } from './views/rules.js';
+import { renderImpactPreview, renderRuleEditForm, renderRulesHistory, renderRulesList, type RerunFragmentData } from './views/rules.js';
 import { renderUploadPage } from './views/admin.js';
 import {
   renderAngelDeleteConfirm, renderAngelForm, renderAngelsList,
@@ -171,7 +182,13 @@ app.get('/auth/login', (c) => {
   const scope = getScope(c);
   if (scope) return c.redirect('/', 302);
   const err = c.req.query('error');
-  const errorTyped = err === 'invalid_credentials' || err === 'google_hd_rejected' ? err : null;
+  const errorTyped =
+    err === 'invalid_credentials' ||
+    err === 'google_hd_rejected' ||
+    err === 'google_unprovisioned' ||
+    err === 'google_failed'
+      ? err
+      : null;
   return c.html(
     renderLoginPage({
       googleEnabled: Boolean(config.GOOGLE_CLIENT_ID),
@@ -206,22 +223,108 @@ app.post('/auth/logout', (c) => {
   return c.redirect('/auth/login', 302);
 });
 
+// ---- Google OAuth (T092) -------------------------------------------------------------------------
+
+const GOOGLE_STATE_COOKIE = 'ga_oauth_state';
+const GOOGLE_NEXT_COOKIE = 'ga_oauth_next';
+const GOOGLE_STATE_TTL_SECONDS = 10 * 60;
+
 app.get('/auth/google/start', (c) => {
   if (!config.GOOGLE_CLIENT_ID) return c.redirect('/auth/login', 302);
-  // TODO(post-prototype): build real Google OAuth authorization-URL with hd.
-  // For the prototype, surface a short status page so demos don't silently fail.
-  return c.html(
-    `<!doctype html><html><body style="font-family:system-ui;padding:32px;max-width:600px;margin:0 auto;">
-      <h1 style="font-size:18px;">Google SSO not yet wired</h1>
-      <p>Google OAuth integration ships after the prototype approval. Use the demo login for now.</p>
-      <p><a href="/auth/login">← Back to sign in</a></p>
-    </body></html>`,
-  );
+
+  const state = generateState();
+  const isHttps = c.req.url.startsWith('https');
+  setCookie(c, GOOGLE_STATE_COOKIE, state, {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: GOOGLE_STATE_TTL_SECONDS,
+  });
+  const next = c.req.query('next');
+  if (next && next.startsWith('/')) {
+    setCookie(c, GOOGLE_NEXT_COOKIE, next, {
+      httpOnly: true,
+      secure: isHttps,
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: GOOGLE_STATE_TTL_SECONDS,
+    });
+  }
+
+  const url = buildAuthUrl({
+    clientId: config.GOOGLE_CLIENT_ID,
+    redirectUri: redirectUriFromConfig(),
+    state,
+  });
+  return c.redirect(url, 302);
 });
 
-app.get('/auth/google/callback', (c) => {
-  // Stub. Production flow: exchange code → verify id_token → check hd claim.
-  return c.redirect('/auth/login?error=google_hd_rejected', 302);
+app.get('/auth/google/callback', async (c) => {
+  const clientId = config.GOOGLE_CLIENT_ID;
+  const clientSecret = config.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return c.redirect('/auth/login', 302);
+  }
+
+  const expectedState = getCookie(c, GOOGLE_STATE_COOKIE);
+  const nextCookie = getCookie(c, GOOGLE_NEXT_COOKIE);
+  deleteCookie(c, GOOGLE_STATE_COOKIE, { path: '/' });
+  deleteCookie(c, GOOGLE_NEXT_COOKIE, { path: '/' });
+
+  const returnedState = c.req.query('state');
+  const code = c.req.query('code');
+  const oauthError = c.req.query('error');
+
+  if (oauthError || !code || !returnedState || !expectedState || returnedState !== expectedState) {
+    logger.warn(
+      {
+        has_code: Boolean(code),
+        has_state: Boolean(returnedState),
+        state_matches: returnedState === expectedState,
+        oauth_error: oauthError ?? null,
+      },
+      'google callback: rejected before token exchange',
+    );
+    return c.redirect('/auth/login?error=google_failed', 302);
+  }
+
+  let tokens;
+  try {
+    tokens = await exchangeCodeForTokens({
+      code,
+      clientId,
+      clientSecret,
+      redirectUri: redirectUriFromConfig(),
+    });
+  } catch (err) {
+    logger.error({ err: String(err) }, 'google callback: token exchange failed');
+    return c.redirect('/auth/login?error=google_failed', 302);
+  }
+
+  const verdict = await verifyIdToken(tokens.id_token, clientId);
+  if (!verdict.ok) {
+    logger.warn({ reason: verdict.reason, detail: verdict.detail ?? null }, 'google callback: id_token rejected');
+    if (verdict.reason === 'hd_missing' || verdict.reason === 'hd_mismatch') {
+      return c.redirect('/auth/login?error=google_hd_rejected', 302);
+    }
+    return c.redirect('/auth/login?error=google_failed', 302);
+  }
+
+  const user = getUserByEmail(verdict.identity.email);
+  if (!user) {
+    logger.warn({ email_domain: verdict.identity.email.split('@')[1] ?? '?' }, 'google callback: user not provisioned');
+    return c.redirect('/auth/login?error=google_unprovisioned', 302);
+  }
+
+  const { id } = createSession({
+    userId: user.id,
+    userAgent: c.req.header('user-agent') ?? undefined,
+  });
+  setSessionCookie(c, id);
+
+  logger.info({ user_id: user.id, role: user.role }, 'google sign-in succeeded');
+  return c.redirect(nextCookie && nextCookie.startsWith('/') ? nextCookie : '/', 302);
 });
 
 app.get('/', (c) => {
@@ -235,15 +338,20 @@ app.get('/', (c) => {
       ? (getLocationAggregates('all', windowRange.start, windowRange.end).map((r) => r.location_id))
       : scope.locations;
 
-  const overall = getOverallCounts(scope.locations, windowRange.start, windowRange.end);
+  const overall = getOverallCountsWithPrior(scope.locations, windowRange.start, windowRange.end);
   const locations = getLocationAggregates(scope.locations, windowRange.start, windowRange.end);
   const trend = getComplianceTrend(locationIds, windowRange.start, windowRange.end);
+  const sparklines = new Map(trend.map((s) => [s.location_id, s.points]));
+
+  const welcomeDismissed = getCookie(c, 'ga_welcome_dismissed') === '1';
 
   const body = renderDashboard({
     window: windowRange,
     overall,
     locations,
     trend,
+    sparklines,
+    showWelcome: !welcomeDismissed,
     filters: {
       severity: c.req.query('severity'),
       shift: c.req.query('shift'),
@@ -273,11 +381,12 @@ app.get('/location/:loc', (c) => {
 
   const windowRange = resolveWindowFromAnchor(parseWindowParam(c.req.query('window')), getAnchorDate());
   const angels = getAngelAggregatesForLocation(locId, windowRange.start, windowRange.end);
+  const missingFlags = getMissingFlagsForLocation(locId, windowRange.start, windowRange.end);
 
   return c.html(
     layout({
       title: `${loc.name} · Guardian Angel`,
-      body: renderLocationView({ location: loc, angels, window: windowRange }),
+      body: renderLocationView({ location: loc, angels, missingFlags, window: windowRange }),
       user: { name: scope.user.name, role: scope.user.role },
       activeNav: 'dashboard',
       dataCurrentAs: humanizeSince(getLastIngestedAt()),
@@ -399,11 +508,13 @@ app.get('/rules/:rule_key/edit', (c) => {
   const rule = getActiveRule(c.req.param('rule_key'));
   if (!rule) return c.html(renderNotFoundPage(scope, 'Rule not found.'), 404);
   const savedFromQuery = c.req.query('saved');
+  const impact = computeImpactFromRule(rule.rule_key, rule.config_json);
   return c.html(
     layout({
       title: `${rule.name} · Rules · Guardian Angel`,
       body: renderRuleEditForm({
         rule,
+        impact,
         ...(savedFromQuery ? { savedVersion: Number(savedFromQuery) } : {}),
       }),
       user: { name: scope.user.name, role: scope.user.role },
@@ -412,6 +523,58 @@ app.get('/rules/:rule_key/edit', (c) => {
     }),
   );
 });
+
+// Htmx fragment — called as user drags a slider or changes a threshold.
+// Returns the same <div id="impact-preview"> block that the full edit page
+// ships with, so htmx outerHTML swap is symmetric.
+app.get('/rules/:rule_key/preview-impact', (c) => {
+  const scope = mustGetScope(c);
+  if (!canEditRules(scope)) return c.html(renderForbiddenPage(scope), 403);
+  const ruleKey = c.req.param('rule_key');
+  const impact = computeImpactFromQuery(ruleKey, c.req.query());
+  return c.html(renderImpactPreview(ruleKey, impact));
+});
+
+/**
+ * Resolve initial impact from the active rule's stored config_json. Returns
+ * null for LLM-evaluated rules — the view renders a "not available" stub
+ * in that case.
+ */
+function computeImpactFromRule(ruleKey: string, configJson: string): ImpactPreview | null {
+  let cfg: Record<string, unknown> = {};
+  try { cfg = JSON.parse(configJson) as Record<string, unknown>; } catch { /* default */ }
+  if (ruleKey === 'copy_paste') {
+    return previewCopyPaste({ similarityThreshold: Number(cfg.similarity_threshold ?? 0.85) });
+  }
+  if (ruleKey === 'short_note') {
+    return previewShortNote({
+      residentialMinWords: Number(cfg.residential_min_words ?? 20),
+      dayProgramMinWords: Number(cfg.day_program_min_words ?? 15),
+    });
+  }
+  return null;
+}
+
+/**
+ * Same as `computeImpactFromRule` but reads `cfg_*` values from query-string
+ * input (htmx `hx-include="closest form"` serializes form fields into query
+ * params for a GET request).
+ */
+function computeImpactFromQuery(ruleKey: string, q: Record<string, string>): ImpactPreview | null {
+  if (ruleKey === 'copy_paste') {
+    const threshold = Number(q.cfg_similarity_threshold);
+    return previewCopyPaste({ similarityThreshold: Number.isFinite(threshold) ? threshold : 0.85 });
+  }
+  if (ruleKey === 'short_note') {
+    const residential = Number(q.cfg_residential_min_words);
+    const dayProgram = Number(q.cfg_day_program_min_words);
+    return previewShortNote({
+      residentialMinWords: Number.isFinite(residential) ? residential : 20,
+      dayProgramMinWords: Number.isFinite(dayProgram) ? dayProgram : 15,
+    });
+  }
+  return null;
+}
 
 app.post('/rules/:rule_key', async (c) => {
   const scope = mustGetScope(c);
@@ -462,7 +625,12 @@ app.post('/rules/:rule_key', async (c) => {
     return c.html(
       layout({
         title: `${updated.name} · Rules · Guardian Angel`,
-        body: renderRuleEditForm({ rule: updated, savedVersion: updated.version, rerunResult }),
+        body: renderRuleEditForm({
+          rule: updated,
+          savedVersion: updated.version,
+          rerunResult,
+          impact: computeImpactFromRule(updated.rule_key, updated.config_json),
+        }),
         user: { name: scope.user.name, role: scope.user.role },
         activeNav: 'rules',
         dataCurrentAs: humanizeSince(getLastIngestedAt()),
@@ -503,6 +671,20 @@ app.post('/rules/:rule_key/revert', async (c) => {
   if (!Number.isFinite(version)) return c.html(renderNotFoundPage(scope, 'Missing version.'), 404);
   const restored = revertRule(ruleKey, version, scope.user.id);
   return c.redirect(`/rules/${encodeURIComponent(ruleKey)}/edit?saved=${restored.version}`, 303);
+});
+
+// ---- UI preferences (cookie-backed, no browser storage) -----------------------------------------
+
+app.post('/ui/welcome/dismiss', (c) => {
+  setCookie(c, 'ga_welcome_dismissed', '1', {
+    httpOnly: false, // readable by htmx if we ever need to, but Path=/ HttpOnly=false is the default for UI prefs
+    secure: c.req.url.startsWith('https'),
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+  });
+  // Empty body → htmx swaps <aside id="welcome-panel"> outerHTML to nothing.
+  return c.body(null, 204);
 });
 
 // ---- Admin: Settings (US4) -----------------------------------------------------------------------
@@ -1033,6 +1215,63 @@ function renderForbiddenPage(scope: RequestScope): string {
     activeNav: 'dashboard',
   });
 }
+
+// ---- Error handler (correlation-ID friendly) ------------------------------------------------------
+//
+// Two shapes:
+//   - htmx request (`HX-Request: true`) → return a small inline fragment so
+//     only the targeted region updates. No layout, no nav.
+//   - Full page request → render the full layout with a 500 page carrying
+//     the same correlation ID.
+// The correlation ID is logged with the stack so operators can cross-reference.
+// Stack is NEVER rendered to the client — only the ID + a plain-language hint.
+
+function newCorrelationId(): string {
+  // Short, clipboard-friendly, URL-safe. Collisions are irrelevant — this is
+  // a log-lookup cookie, not an identity.
+  return `err_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+app.onError((err, c) => {
+  const correlationId = newCorrelationId();
+  logger.error(
+    {
+      err: String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      correlation_id: correlationId,
+      method: c.req.method,
+      path: c.req.path,
+    },
+    'request failed',
+  );
+
+  const isHtmx = c.req.header('HX-Request') === 'true';
+  if (isHtmx) {
+    return c.html(
+      `<div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+  <p class="font-medium">Something went wrong.</p>
+  <p class="mt-1">Reload the page and try again. If it keeps happening, send this code to support: <code class="font-mono tnum">${correlationId}</code>.</p>
+</div>`,
+      500,
+    );
+  }
+
+  const scope = getScope(c);
+  return c.html(
+    layout({
+      title: 'Something went wrong · Guardian Angel',
+      body: `<section class="py-12 text-center">
+        <h1 class="text-2xl font-semibold text-gray-900">Something went wrong</h1>
+        <p class="mt-2 text-sm text-gray-600">Reload the page and try again. If it keeps happening, send this code to support:</p>
+        <p class="mt-2 font-mono tnum text-sm text-gray-900">${correlationId}</p>
+        <a href="/" class="mt-6 inline-block text-sm text-blue-600 hover:underline">Back to dashboard</a>
+      </section>`,
+      user: scope ? { name: scope.user.name, role: scope.user.role } : undefined,
+      activeNav: 'dashboard',
+    }),
+    500,
+  );
+});
 
 // ---- Serve ---------------------------------------------------------------------------------------
 

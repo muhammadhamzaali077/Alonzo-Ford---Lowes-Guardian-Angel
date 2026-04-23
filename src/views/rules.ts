@@ -6,6 +6,7 @@
 //   - Buttons: "Save changes", "Update flags now", "Restore this version"
 
 import type { Rule } from '../rules/rules-admin.js';
+import type { ImpactPreview } from '../db/queries/rule-impact.js';
 import { escapeHtml } from './layout.js';
 import { renderBreadcrumb } from './ui.js';
 
@@ -47,10 +48,13 @@ export interface RuleEditFormOptions {
   rule: Rule;
   savedVersion?: number;    // set after a successful save — shows success banner
   rerunResult?: RerunFragmentData;
+  /** Initial impact preview (already computed at current config values). Null when the rule is LLM-evaluated. */
+  impact?: ImpactPreview | null;
 }
 
 export function renderRuleEditForm(opts: RuleEditFormOptions): string {
   const { rule, savedVersion, rerunResult } = opts;
+  const impact = opts.impact ?? null;
   let config: Record<string, unknown> = {};
   try { config = JSON.parse(rule.config_json) as Record<string, unknown>; } catch { /* ignore */ }
 
@@ -85,6 +89,8 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
     </div>
 
     ${renderConfigFields(rule.rule_key, config)}
+
+    ${renderImpactPreview(rule.rule_key, impact)}
 
     <details class="rounded-md border border-gray-200 bg-white">
       <summary class="cursor-pointer select-none px-4 py-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
@@ -142,23 +148,58 @@ function renderRerunResult(r: RerunFragmentData): string {
 function renderConfigFields(ruleKey: string, config: Record<string, unknown>): string {
   switch (ruleKey) {
     case 'copy_paste':
-      return renderCopyPasteConfig(config);
+      return renderCopyPasteConfig(ruleKey, config);
     case 'short_note':
-      return renderShortNoteConfig(config);
+      return renderShortNoteConfig(ruleKey, config);
     default:
       return '';
   }
 }
 
-function renderCopyPasteConfig(config: Record<string, unknown>): string {
+/**
+ * Shared htmx attribute block applied to every config input — an `input`
+ * event triggers a 400 ms-debounced GET to /rules/:key/preview-impact,
+ * replacing the <div id="impact-preview"> fragment inline.
+ */
+function previewHxAttrs(ruleKey: string): string {
+  const url = `/rules/${encodeURIComponent(ruleKey)}/preview-impact`;
+  return `hx-get="${url}" hx-target="#impact-preview" hx-swap="outerHTML" hx-trigger="input changed delay:400ms" hx-include="closest form"`;
+}
+
+/**
+ * Render the initial #impact-preview container. For LLM-evaluated rules,
+ * shows a stub; for deterministic rules, shows the computed count.
+ * This fragment is the same shape returned by GET /rules/:key/preview-impact
+ * so htmx's outerHTML swap is symmetric.
+ */
+export function renderImpactPreview(ruleKey: string, impact: ImpactPreview | null): string {
+  if (impact === null) {
+    // LLM-evaluated rule — no cheap preview possible.
+    return `<div id="impact-preview" class="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+      <div class="font-medium text-gray-900">Live preview not available for this rule</div>
+      <p class="mt-1 text-xs text-gray-600">This rule asks the system to read note content, which takes a few seconds per note. Click <strong>Save &amp; update flags now</strong> to see the effect across recent notes.</p>
+    </div>`;
+  }
+  const pct = impact.total_in_window > 0
+    ? ((impact.count / impact.total_in_window) * 100).toFixed(1)
+    : '0.0';
+  return `<div id="impact-preview" class="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+    <div class="font-medium">At this setting, <span class="tnum">${impact.count}</span> of <span class="tnum">${impact.total_in_window}</span> notes (${pct}%) would be flagged</div>
+    <p class="mt-1 text-xs text-blue-800">Preview covers ${escapeHtml(impact.window_start)} to ${escapeHtml(impact.window_end)}. Estimates update as you change thresholds. Click <strong>Save &amp; update flags now</strong> to apply.</p>
+  </div>`;
+}
+
+function renderCopyPasteConfig(ruleKey: string, config: Record<string, unknown>): string {
   const threshold = Number(config.similarity_threshold ?? 0.85);
   const windowSize = Number(config.window_size ?? 20);
+  const hx = previewHxAttrs(ruleKey);
   return `<div>
   <label for="cfg-threshold" class="block text-sm font-medium text-gray-900">How similar is too similar?</label>
   <p class="mt-0.5 text-xs text-gray-500">Lower = more sensitive. Higher = only near-identical notes flagged.</p>
   <div class="mt-2 flex items-center gap-4">
     <input id="cfg-threshold" name="cfg_similarity_threshold" type="range" min="0.5" max="1.0" step="0.05" value="${threshold.toFixed(2)}"
-           class="flex-1 accent-blue-600" oninput="document.getElementById('cfg-threshold-value').textContent=Number(this.value).toFixed(2)">
+           class="flex-1 accent-blue-600" oninput="document.getElementById('cfg-threshold-value').textContent=Number(this.value).toFixed(2)"
+           ${hx}>
     <span id="cfg-threshold-value" class="text-base font-medium tnum text-gray-900 w-12 text-right">${threshold.toFixed(2)}</span>
   </div>
   <div class="mt-1 flex justify-between text-xs text-gray-500">
@@ -178,22 +219,25 @@ function renderCopyPasteConfig(config: Record<string, unknown>): string {
 </div>`;
 }
 
-function renderShortNoteConfig(config: Record<string, unknown>): string {
+function renderShortNoteConfig(ruleKey: string, config: Record<string, unknown>): string {
   const residential = Number(config.residential_min_words ?? 20);
   const dayProgram = Number(config.day_program_min_words ?? 15);
+  const hx = previewHxAttrs(ruleKey);
   return `<fieldset>
   <legend class="block text-sm font-medium text-gray-900">Minimum note length</legend>
   <div class="mt-2 space-y-2">
     <div class="flex items-center gap-3">
       <label for="cfg-residential" class="text-sm text-gray-700 w-44">Residential shifts under</label>
       <input id="cfg-residential" name="cfg_residential_min_words" type="number" min="1" max="200" value="${residential}"
-             class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600">
+             class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600"
+             ${hx}>
       <span class="text-sm text-gray-700">words</span>
     </div>
     <div class="flex items-center gap-3">
       <label for="cfg-dayprog" class="text-sm text-gray-700 w-44">Day program under</label>
       <input id="cfg-dayprog" name="cfg_day_program_min_words" type="number" min="1" max="200" value="${dayProgram}"
-             class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600">
+             class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600"
+             ${hx}>
       <span class="text-sm text-gray-700">words</span>
     </div>
   </div>
