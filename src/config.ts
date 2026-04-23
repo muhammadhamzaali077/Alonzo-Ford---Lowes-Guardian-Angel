@@ -10,6 +10,20 @@ const EnvSchema = z.object({
     .string()
     .default('true')
     .transform((v) => v.toLowerCase() === 'true'),
+  /**
+   * Bypass OpenRouter entirely. When true, `classifyNote()` returns a
+   * deterministic in-process verdict based on the prompt signals (similarity
+   * score + word count + notification level). Used for demo rehearsal and
+   * offline CI so the AI path is reproducible across reseeds and scenario
+   * switches. Defaults to match PROTOTYPE_MODE so prototype instances are
+   * stub-by-default; set explicitly to 'false' to use the real classifier
+   * once a paid OpenRouter model is wired up. See loadConfig() below for the
+   * resolve-after-parse logic.
+   */
+  PROTOTYPE_STUB_CLASSIFIER: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v.toLowerCase() === 'true')),
   DEMO_LOGIN_EMAIL: z.string().email().default('demo@lowesguardianangel.com'),
   DEMO_LOGIN_PASSWORD: z.string().default('demo'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
@@ -30,6 +44,12 @@ export type Config = z.infer<typeof EnvSchema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = EnvSchema.parse(env);
+  // Stub-classifier defaults to PROTOTYPE_MODE when unset. This keeps the
+  // demo + dev experience reproducible (no external API dependency) while
+  // allowing a deliberate opt-out for paid-model testing.
+  if (parsed.PROTOTYPE_STUB_CLASSIFIER === undefined) {
+    parsed.PROTOTYPE_STUB_CLASSIFIER = parsed.PROTOTYPE_MODE;
+  }
   assertDemoPasswordSafety(parsed);
   return parsed;
 }

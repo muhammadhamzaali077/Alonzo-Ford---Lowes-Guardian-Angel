@@ -328,7 +328,7 @@ function renderLocationsList(
       <span class="hidden sm:inline text-xs ga-text-muted">${escapeHtml(locationTypeLabel(r.location_type))}</span>
     </div>
     <span class="hidden sm:inline-flex items-center shrink-0" aria-hidden="true">${sparkHtml}</span>
-    <span class="text-sm ga-text tnum shrink-0 w-[9rem] text-right">${escapeHtml(countsOrEmpty)}</span>
+    <span class="text-sm ga-text tnum shrink-0 w-[9rem] sm:w-[11rem] text-right">${escapeHtml(countsOrEmpty)}</span>
   </a>
 </li>`;
     })

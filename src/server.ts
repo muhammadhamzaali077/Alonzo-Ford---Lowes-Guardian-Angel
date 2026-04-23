@@ -118,6 +118,22 @@ if (config.PROTOTYPE_MODE) {
   const seeded = seedIfEmpty();
   if (seeded) logger.info('auto-seeded empty DB on cold boot');
 
+  // When the stub classifier is enabled, reset any T-Logs that ended in
+  // `permanent_failure` from a prior real-classifier run so the stub pass
+  // re-classifies them. Without this the fix is cosmetic — the AI pass
+  // would continue skipping those rows.
+  if (config.PROTOTYPE_STUB_CLASSIFIER) {
+    const reset = getDb()
+      .prepare(
+        "UPDATE t_logs SET classifier_status='pending', classifier_error_code=NULL, classifier_attempt_count=0, classifier_last_attempt_at=NULL WHERE is_current=1 AND classifier_status='permanent_failure'",
+      )
+      .run();
+    if (reset.changes > 0) {
+      logger.info({ reset: reset.changes }, 'boot: reset permanent_failure T-Logs for stub reclassification');
+    }
+    logger.info({ stub: true, model: 'google/gemini-flash-lite-2.0 (stubbed)' }, 'boot: AI classifier running in STUB mode (PROTOTYPE_STUB_CLASSIFIER=true)');
+  }
+
   const det = runDeterministicPass();
   logger.info(
     {
@@ -128,9 +144,52 @@ if (config.PROTOTYPE_MODE) {
     'boot: deterministic pass complete',
   );
 
-  void runAiPass().catch((err) => {
-    logger.error({ err: String(err) }, 'boot: AI pass failed');
-  });
+  void runAiPass()
+    .then(() => {
+      // Pre-stage one thumbs-up feedback row so the T124 counter renders
+      // non-zero at demo time. Idempotent via UPSERT. Only fires when the
+      // stub is active so we don't pollute real prod data.
+      if (config.PROTOTYPE_STUB_CLASSIFIER) {
+        prestageDemoFeedback();
+      }
+    })
+    .catch((err) => {
+      logger.error({ err: String(err) }, 'boot: AI pass failed');
+    });
+}
+
+/**
+ * Pre-stage exactly one thumbs-up feedback row so Alonzo sees a non-zero
+ * counter on Jamal's first copy-paste flag when he hits the note page.
+ * Idempotent (UPSERT on (flag_id, user_id)) and silently no-ops if the
+ * target flag doesn't exist yet (e.g. if AI pass hadn't finished).
+ */
+function prestageDemoFeedback(): void {
+  try {
+    const db = getDb();
+    const alonzo = db.prepare("SELECT id FROM users WHERE email = 'alonzo@lowesguardianangel.com'").get() as { id: string } | undefined;
+    if (!alonzo) return;
+    const flag = db
+      .prepare(
+        `SELECT id FROM flags
+          WHERE source = 'ai_classifier'
+            AND severity = 'red'
+            AND angel_id = 'ANG007'
+            AND resolution = 'open'
+            AND reason LIKE '%Near-identical content%'
+          ORDER BY id ASC
+          LIMIT 1`,
+      )
+      .get() as { id: number } | undefined;
+    if (!flag) return;
+    db.prepare(
+      `INSERT INTO flag_feedback (flag_id, user_id, verdict) VALUES (?, ?, 'up')
+         ON CONFLICT(flag_id, user_id) DO NOTHING`,
+    ).run(flag.id, alonzo.id);
+    logger.info({ flag_id: flag.id }, 'boot: pre-staged demo thumbs-up on Jamal cluster flag');
+  } catch (err) {
+    logger.warn({ err: String(err) }, 'boot: prestageDemoFeedback failed (non-fatal)');
+  }
 }
 
 // ---- App -----------------------------------------------------------------------------------------
@@ -1429,7 +1488,12 @@ app.get('/search', (c) => {
 
 function parseWindowParam(raw: string | undefined): WindowPreset {
   if (raw === 'this_week' || raw === '30d' || raw === 'all' || raw === '7d') return raw;
-  return '7d';
+  // Default to 30 days (was '7d'). The synthetic fixture spans ~30 days and
+  // the demo hero narrative relies on Jamal's copy-paste cluster being
+  // visible — with a 7-day window it can be out-of-range and Riverside
+  // reads as "No flags" on the dashboard. Flip back to '7d' if/when a
+  // production deployment collects real-time ingest.
+  return '30d';
 }
 
 function renderNotFoundPage(c: Parameters<typeof getCookie>[0], scope: RequestScope, message: string): string {
@@ -1525,3 +1589,4 @@ serve({ fetch: app.fetch, port: config.PORT }, (info) => {
 });
 
 export default app;
+

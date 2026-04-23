@@ -158,25 +158,29 @@ ${data.flags
   .map((f) => {
     const date = f.reported_date ?? f.scheduled_shift_date ?? '';
     const shift = f.shift_name ?? f.scheduled_shift_name ?? '';
-    const link =
-      f.tlog_id && f.tlog_version
-        ? `/note/${encodeURIComponent(f.tlog_id)}/${encodeURIComponent(String(f.tlog_version))}`
-        : '#';
     const pill =
       f.severity === 'red'
         ? rollupPill(1, 0, 0)
         : rollupPill(0, 1, 0);
     const categoryLabel = displayCategoryLabel(f.display_category as DisplayCategory);
-    return `<li>
-  <a href="${link}" class="block px-5 py-4 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
-    <div class="flex items-center gap-3 flex-wrap">
+    const hasNote = Boolean(f.tlog_id && f.tlog_version);
+    // Missing-schedule flags have no note to link to (that's the point).
+    // Render them as a static card so there's no clickable affordance —
+    // previously they were anchor-wrapped with href="#" which looked
+    // interactive and navigated to a dead anchor. Flags that DO have an
+    // underlying note stay as links to /note/:tlog/:version.
+    const inner = `<div class="flex items-center gap-3 flex-wrap">
       ${pill}
       <span class="text-xs font-medium ga-text">${escapeHtml(categoryLabel)}</span>
       <span class="text-xs ga-text-muted">${escapeHtml(date)}${shift ? ' · ' + escapeHtml(shift) : ''}</span>
+      ${hasNote ? '' : '<span class="ml-auto text-xs ga-text-subtle">no note was submitted</span>'}
     </div>
-    <p class="mt-2 text-sm ga-text-strong">${escapeHtml(f.reason)}</p>
-  </a>
-</li>`;
+    <p class="mt-2 text-sm ga-text-strong">${escapeHtml(f.reason)}</p>`;
+    if (hasNote) {
+      const link = `/note/${encodeURIComponent(f.tlog_id!)}/${encodeURIComponent(String(f.tlog_version))}`;
+      return `<li><a href="${link}" class="block px-5 py-4 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">${inner}</a></li>`;
+    }
+    return `<li><div class="block px-5 py-4">${inner}</div></li>`;
   })
   .join('')}
 </ul>`;
