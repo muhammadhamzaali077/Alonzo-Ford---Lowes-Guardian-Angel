@@ -8,9 +8,47 @@ Tasks are topologically ordered — do them top-to-bottom. Every task cites the 
 
 ---
 
+## Decisions log — Brand direction change (2026-04-23, afternoon — post-demo)
+
+**Source**: Direct client feedback from Alonzo + LGA leadership during the live demo.
+
+**Amendment**: The "state auditor over the shoulder" aesthetic — adopted as the product's positioning from the beginning of this project — is **officially retired**. The UI/UX Constraints block below and the 5-batch visual system committed in `c292dd1 → 618f57f` reflect that retired direction. Everything visual gets redesigned.
+
+**What this overrides**:
+- The UI/UX Constraints block's "clean healthcare compliance tool that a state auditor could read over the user's shoulder" framing
+- The color palette committed in `96cca40` / the `--ga-*` tokens in `src/views/design-tokens-css.ts` (slate bg, deep-clinical severities, `#2563eb` blue accent)
+- The dashboard-centric tile-first home page layout committed in Batch 2 (`4062d67`)
+- The "no dark mode / no bold colors / restrained typography" priors from the original UI/UX Constraints
+- The preview-hidden rule-editor "Previous versions" surface — explicit client ask to remove from UI
+- Full-page navigation on filter / severity / tab changes — client explicitly wants in-place htmx swaps
+
+**What this does NOT override** (technical constitution still binds):
+- No JS frameworks (Principle I)
+- No client-side build step (Principle IX)
+- No browser storage (Principle X — `localStorage`/`sessionStorage`/`IndexedDB` forbidden; cookies for UI prefs still allowed)
+- Server-rendered SVG for charts — no chart lib
+- No modals or slide-overs — drill-down remains page-to-page (client reaffirmed)
+- Mobile-responsive at 375px
+- No emoji in chrome (inline SVG icons only)
+- PHI-safety rules (P2 scrub-in-logs, no PHI in `<script>` or `data-*` attrs)
+
+**Client's direct adjectives**: "modern, realistic, colorful, bold." Framing: a premium, branded product — navy + gold LGA identity — that feels inviting to a non-technical executive, not sterile or clinical.
+
+**Home-page behavior change**: the dashboard is no longer tile-first. A live log stream of recent T-Logs (newest first, severity-color-coded) is the hero surface. Aggregate tiles and trend chart move below or beside the stream.
+
+**Rule-editor simplification**: version history stays in the DB (data preserved), hidden from UI. Editor reduces to slider + live impact preview + Save.
+
+**Interactivity floor**: every filter, tab, severity toggle, and rule input must update via `hx-swap`. Zero full-page reloads on these interactions. Log stream auto-polls every 30s.
+
+**Execution**: 5-batch migration (tokens → shell → home → drill-down + note + rules → digest + admin + login → htmx sweep), human review between every batch. Tokens proposed first and **not** shipped until explicit approval. See Phase 15 below.
+
+---
+
 ## Decisions log — UX overhaul (2026-04-23)
 
 A demo-polish pass (see Phase 14 below) negotiated the following overrides against the original UI/UX Constraints block. Captured here so the reasoning doesn't live only in conversation.
+
+**Status (post-demo)**: Superseded by the brand-direction amendment above. The items below are preserved as history; the rationales tied to "state auditor" framing no longer apply.
 
 | Ask | Decision | Rationale |
 |---|---|---|
