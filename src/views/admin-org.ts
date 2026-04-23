@@ -37,13 +37,13 @@ const SECTIONS: Array<{ key: AdminSection; label: string; href: string }> = [
 export function renderSettingsShell(active: AdminSection, body: string): string {
   const sidebarLinks = SECTIONS.map(
     (s) => `<a href="${s.href}" class="block px-3 py-2 min-h-[44px] rounded-md text-sm ${
-      active === s.key ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+      active === s.key ? 'bg-blue-50 text-blue-700 font-medium' : 'ga-text hover:bg-gray-50'
     }">${escapeHtml(s.label)}</a>`,
   ).join('');
 
   return `<section>
-  <h1 class="text-2xl font-semibold text-gray-900">Settings</h1>
-  <p class="mt-1 text-sm text-gray-600">Manage the org data that drives flagging and the weekly email.</p>
+  <h1 class="text-2xl font-semibold ga-text-strong">Settings</h1>
+  <p class="mt-1 text-sm ga-text">Manage the org data that drives flagging and the weekly email.</p>
   <div class="mt-6 grid grid-cols-1 md:grid-cols-[16rem_1fr] gap-6">
     <aside>
       <nav class="bg-white border border-gray-200 rounded-md p-2 space-y-1" aria-label="Settings sections">
@@ -66,8 +66,8 @@ export function renderSettingsHub(counts: {
   shift_schedules: number; recipients: number; ops: number;
 }): string {
   const body = `<div class="bg-white border border-gray-200 rounded-md p-5">
-  <h2 class="text-lg font-medium text-gray-900">Overview</h2>
-  <p class="mt-1 text-sm text-gray-600">Current counts. Pick a section on the left to edit.</p>
+  <h2 class="text-lg font-medium ga-text-strong">Overview</h2>
+  <p class="mt-1 text-sm ga-text">Current counts. Pick a section on the left to edit.</p>
   <dl class="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
     ${countTile('Locations', counts.locations)}
     ${countTile('Angels', counts.angels)}
@@ -82,8 +82,8 @@ export function renderSettingsHub(counts: {
 
 function countTile(label: string, n: number): string {
   return `<div class="rounded-md border border-gray-200 p-4">
-  <dt class="text-xs text-gray-600">${escapeHtml(label)}</dt>
-  <dd class="mt-1 text-2xl font-semibold tnum text-gray-900">${n}</dd>
+  <dt class="text-xs ga-text">${escapeHtml(label)}</dt>
+  <dd class="mt-1 text-2xl font-semibold tnum ga-text-strong">${n}</dd>
 </div>`;
 }
 
@@ -93,7 +93,7 @@ function countTile(label: string, n: number): string {
 
 function entityHeader(label: string, addHref: string): string {
   return `<div class="flex items-center justify-between gap-4 flex-wrap">
-  <h2 class="text-lg font-medium text-gray-900">${escapeHtml(label)}</h2>
+  <h2 class="text-lg font-medium ga-text-strong">${escapeHtml(label)}</h2>
   <a href="${addHref}" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">Add</a>
 </div>`;
 }
@@ -109,7 +109,7 @@ function rowActions(editHref: string, deleteHref?: string): string {
 }
 
 function emptyState(message: string): string {
-  return `<div class="bg-white border border-gray-200 rounded-md p-5 text-sm text-gray-500">${escapeHtml(message)}</div>`;
+  return `<div class="bg-white border border-gray-200 rounded-md p-5 text-sm ga-text-muted">${escapeHtml(message)}</div>`;
 }
 
 function renderForm(action: string, fields: string, submitLabel: string): string {
@@ -117,7 +117,7 @@ function renderForm(action: string, fields: string, submitLabel: string): string
   ${fields}
   <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
     <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">${escapeHtml(submitLabel)}</button>
-    <a href="/admin/org" class="text-sm text-gray-700 hover:text-blue-600">Cancel</a>
+    <a href="/admin/org" class="text-sm ga-text hover:text-blue-600">Cancel</a>
   </div>
 </form>`;
 }
@@ -126,7 +126,7 @@ function textInput(name: string, label: string, value: string, opts: { required?
   const req = opts.required ? 'required' : '';
   const ph = opts.placeholder ?? '';
   return `<div>
-  <label for="f-${name}" class="block text-sm font-medium text-gray-900">${escapeHtml(label)}</label>
+  <label for="f-${name}" class="block text-sm font-medium ga-text-strong">${escapeHtml(label)}</label>
   <input id="f-${name}" name="${name}" type="text" value="${escapeHtml(value)}" placeholder="${escapeHtml(ph)}" ${req}
          class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
 </div>`;
@@ -139,7 +139,7 @@ function selectInput(
   choices: Array<{ value: string; label: string }>,
 ): string {
   return `<div>
-  <label for="f-${name}" class="block text-sm font-medium text-gray-900">${escapeHtml(label)}</label>
+  <label for="f-${name}" class="block text-sm font-medium ga-text-strong">${escapeHtml(label)}</label>
   <select id="f-${name}" name="${name}"
           class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
     ${choices.map((c) => `<option value="${escapeHtml(c.value)}" ${c.value === value ? 'selected' : ''}>${escapeHtml(c.label)}</option>`).join('')}
@@ -157,8 +157,8 @@ export function renderLocationsList(locations: Location[], managers: Manager[]):
   ${locations.length === 0 ? emptyState('No locations yet. Add one to start.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${locations.map((l) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(l.name)}</div>
-        <div class="mt-1 text-xs text-gray-500">${escapeHtml(locationTypeLabel(l.type))} · manager ${escapeHtml(mgrName(l.manager_id))} · ${escapeHtml(l.id)}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(l.name)}</div>
+        <div class="mt-1 text-xs ga-text-muted">${escapeHtml(locationTypeLabel(l.type))} · manager ${escapeHtml(mgrName(l.manager_id))} · ${escapeHtml(l.id)}</div>
       </div>
       ${rowActions(`/admin/locations/${encodeURIComponent(l.id)}/edit`, `/admin/locations/${encodeURIComponent(l.id)}/delete`)}
     </li>`).join('')}
@@ -191,8 +191,8 @@ export function renderLocationForm(
   `;
 
   const action = isNew ? '/admin/locations' : `/admin/locations/${encodeURIComponent(id)}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add location' : 'Edit location'}</h2>
-  <p class="mt-1 text-sm text-gray-600">The Location ID matches the Therap program ID.</p>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add location' : 'Edit location'}</h2>
+  <p class="mt-1 text-sm ga-text">The Location ID matches the Therap program ID.</p>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create location' : 'Save changes')}
   </div>`;
@@ -203,13 +203,13 @@ export function renderLocationDeleteConfirm(
   location: Location,
   counts: { angels: number; individuals: number; tlogs: number },
 ): string {
-  const body = `<h2 class="text-lg font-medium text-gray-900">Deactivate location</h2>
-  <p class="mt-1 text-sm text-gray-600">This location will be marked inactive. Historical notes and flags stay as-is.</p>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate location</h2>
+  <p class="mt-1 text-sm ga-text">This location will be marked inactive. Historical notes and flags stay as-is.</p>
   <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
-    <p class="text-sm text-gray-900"><span class="font-medium">${escapeHtml(location.name)}</span> has ${counts.angels} angel${counts.angels === 1 ? '' : 's'}, ${counts.individuals} individual${counts.individuals === 1 ? '' : 's'}, and ${counts.tlogs} note${counts.tlogs === 1 ? '' : 's'}. Deactivating keeps every note and flag in place; the location just stops appearing in drop-downs and new dashboards.</p>
+    <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(location.name)}</span> has ${counts.angels} angel${counts.angels === 1 ? '' : 's'}, ${counts.individuals} individual${counts.individuals === 1 ? '' : 's'}, and ${counts.tlogs} note${counts.tlogs === 1 ? '' : 's'}. Deactivating keeps every note and flag in place; the location just stops appearing in drop-downs and new dashboards.</p>
     <form method="post" action="/admin/locations/${encodeURIComponent(location.id)}/delete" class="mt-4 flex items-center gap-3">
       <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600">Deactivate location</button>
-      <a href="/admin/locations" class="text-sm text-gray-700 hover:text-blue-600">Cancel</a>
+      <a href="/admin/locations" class="text-sm ga-text hover:text-blue-600">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('locations', body);
@@ -225,8 +225,8 @@ export function renderAngelsList(angels: Angel[], locations: Location[]): string
   ${angels.length === 0 ? emptyState('No angels yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${angels.map((a) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(a.name)}</div>
-        <div class="mt-1 text-xs text-gray-500">${escapeHtml(a.role)} · ${escapeHtml(locName(a.location_id))} · ${escapeHtml(a.id)}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(a.name)}</div>
+        <div class="mt-1 text-xs ga-text-muted">${escapeHtml(a.role)} · ${escapeHtml(locName(a.location_id))} · ${escapeHtml(a.id)}</div>
       </div>
       ${rowActions(`/admin/angels/${encodeURIComponent(a.id)}/edit`, `/admin/angels/${encodeURIComponent(a.id)}/delete`)}
     </li>`).join('')}
@@ -255,7 +255,7 @@ export function renderAngelForm(angel: Angel | null, locations: Location[]): str
     ])}
   `;
   const action = isNew ? '/admin/angels' : `/admin/angels/${encodeURIComponent(id)}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add angel' : 'Edit angel'}</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add angel' : 'Edit angel'}</h2>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create angel' : 'Save changes')}
   </div>`;
@@ -263,12 +263,12 @@ export function renderAngelForm(angel: Angel | null, locations: Location[]): str
 }
 
 export function renderAngelDeleteConfirm(angel: Angel, noteCount: number): string {
-  const body = `<h2 class="text-lg font-medium text-gray-900">Deactivate angel</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate angel</h2>
   <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
-    <p class="text-sm text-gray-900"><span class="font-medium">${escapeHtml(angel.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating marks the angel as inactive; the notes stay.</p>
+    <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(angel.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating marks the angel as inactive; the notes stay.</p>
     <form method="post" action="/admin/angels/${encodeURIComponent(angel.id)}/delete" class="mt-4 flex items-center gap-3">
       <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700">Deactivate angel</button>
-      <a href="/admin/angels" class="text-sm text-gray-700 hover:text-blue-600">Cancel</a>
+      <a href="/admin/angels" class="text-sm ga-text hover:text-blue-600">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('angels', body);
@@ -284,8 +284,8 @@ export function renderIndividualsList(individuals: Individual[], locations: Loca
   ${individuals.length === 0 ? emptyState('No individuals yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${individuals.map((i) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(i.name)}</div>
-        <div class="mt-1 text-xs text-gray-500">${escapeHtml(locName(i.location_id))} · ${escapeHtml(i.id)}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(i.name)}</div>
+        <div class="mt-1 text-xs ga-text-muted">${escapeHtml(locName(i.location_id))} · ${escapeHtml(i.id)}</div>
       </div>
       ${rowActions(`/admin/individuals/${encodeURIComponent(i.id)}/edit`, `/admin/individuals/${encodeURIComponent(i.id)}/delete`)}
     </li>`).join('')}
@@ -308,7 +308,7 @@ export function renderIndividualForm(individual: Individual | null, locations: L
     ])}
   `;
   const action = isNew ? '/admin/individuals' : `/admin/individuals/${encodeURIComponent(id)}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add individual' : 'Edit individual'}</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add individual' : 'Edit individual'}</h2>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create individual' : 'Save changes')}
   </div>`;
@@ -316,12 +316,12 @@ export function renderIndividualForm(individual: Individual | null, locations: L
 }
 
 export function renderIndividualDeleteConfirm(individual: Individual, noteCount: number): string {
-  const body = `<h2 class="text-lg font-medium text-gray-900">Deactivate individual</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">Deactivate individual</h2>
   <div class="mt-4 bg-white border border-amber-200 rounded-md p-5">
-    <p class="text-sm text-gray-900"><span class="font-medium">${escapeHtml(individual.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating keeps the notes; the individual stops appearing in drop-downs.</p>
+    <p class="text-sm ga-text-strong"><span class="font-medium">${escapeHtml(individual.name)}</span> has ${noteCount} note${noteCount === 1 ? '' : 's'}. Deactivating keeps the notes; the individual stops appearing in drop-downs.</p>
     <form method="post" action="/admin/individuals/${encodeURIComponent(individual.id)}/delete" class="mt-4 flex items-center gap-3">
       <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700">Deactivate individual</button>
-      <a href="/admin/individuals" class="text-sm text-gray-700 hover:text-blue-600">Cancel</a>
+      <a href="/admin/individuals" class="text-sm ga-text hover:text-blue-600">Cancel</a>
     </form>
   </div>`;
   return renderSettingsShell('individuals', body);
@@ -336,8 +336,8 @@ export function renderManagersList(managers: Manager[]): string {
   ${managers.length === 0 ? emptyState('No managers yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${managers.map((m) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(m.name)}</div>
-        <div class="mt-1 text-xs text-gray-500">${escapeHtml(m.email ?? '—')} · ${escapeHtml(m.id)}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(m.name)}</div>
+        <div class="mt-1 text-xs ga-text-muted">${escapeHtml(m.email ?? '—')} · ${escapeHtml(m.id)}</div>
       </div>
       ${rowActions(`/admin/managers/${encodeURIComponent(m.id)}/edit`)}
     </li>`).join('')}
@@ -357,7 +357,7 @@ export function renderManagerForm(manager: Manager | null): string {
     ${textInput('email', 'Email', email, { placeholder: 'vivian@lowesguardianangel.com' })}
   `;
   const action = isNew ? '/admin/managers' : `/admin/managers/${encodeURIComponent(id)}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add manager' : 'Edit manager'}</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add manager' : 'Edit manager'}</h2>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create manager' : 'Save changes')}
   </div>`;
@@ -370,12 +370,12 @@ export function renderManagerForm(manager: Manager | null): string {
 
 export function renderSchedulesList(rows: ShiftScheduleRow[]): string {
   const body = `${entityHeader('Shift schedules', '/admin/shift-schedules/new')}
-  <p class="mt-1 text-sm text-gray-600">Each row is one expected shift pattern for an individual. Missing-note flags fire against these.</p>
+  <p class="mt-1 text-sm ga-text">Each row is one expected shift pattern for an individual. Missing-note flags fire against these.</p>
   ${rows.length === 0 ? emptyState('No shift schedules yet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${rows.map((r) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(r.individual_name)} · ${escapeHtml(r.shift_name)}</div>
-        <div class="mt-1 text-xs text-gray-500 tnum">${escapeHtml(r.start_time)}–${escapeHtml(r.end_time)} ET · ${escapeHtml(r.days_of_week)}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(r.individual_name)} · ${escapeHtml(r.shift_name)}</div>
+        <div class="mt-1 text-xs ga-text-muted tnum">${escapeHtml(r.start_time)}–${escapeHtml(r.end_time)} ET · ${escapeHtml(r.days_of_week)}</div>
       </div>
       ${rowActions(`/admin/shift-schedules/${r.id}/edit`, `/admin/shift-schedules/${r.id}/delete`)}
     </li>`).join('')}
@@ -407,10 +407,10 @@ export function renderScheduleForm(
       ${textInput('end_time', 'End time (ET)', end_time, { required: true, placeholder: '17:00' })}
     </div>
     ${textInput('days_of_week', 'Days of week', days, { required: true, placeholder: 'mon,tue,wed,thu,fri' })}
-    <p class="text-xs text-gray-500">Days: comma-separated from mon, tue, wed, thu, fri, sat, sun. Use "mon,tue,wed,thu,fri" for weekdays only.</p>
+    <p class="text-xs ga-text-muted">Days: comma-separated from mon, tue, wed, thu, fri, sat, sun. Use "mon,tue,wed,thu,fri" for weekdays only.</p>
   `;
   const action = isNew ? '/admin/shift-schedules' : `/admin/shift-schedules/${idAttr}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add shift schedule' : 'Edit shift schedule'}</h2>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add shift schedule' : 'Edit shift schedule'}</h2>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create schedule' : 'Save changes')}
   </div>`;
@@ -432,12 +432,12 @@ export function renderRecipientsList(
   };
 
   const body = `${entityHeader('Digest recipients', '/admin/recipients/new')}
-  <p class="mt-1 text-sm text-gray-600">Each recipient gets a weekly compliance email scoped to their location(s).</p>
+  <p class="mt-1 text-sm ga-text">Each recipient gets a weekly compliance email scoped to their location(s).</p>
   ${recipients.length === 0 ? emptyState('No recipients yet. Add someone to receive the weekly email.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${recipients.map((r) => `<li class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
       <div class="min-w-0">
-        <div class="text-sm font-medium text-gray-900">${escapeHtml(r.email)}</div>
-        <div class="mt-1 text-xs text-gray-500">${escapeHtml(scopeLabel(r.scope))} · ${r.is_active ? 'active' : 'paused'}</div>
+        <div class="text-sm font-medium ga-text-strong">${escapeHtml(r.email)}</div>
+        <div class="mt-1 text-xs ga-text-muted">${escapeHtml(scopeLabel(r.scope))} · ${r.is_active ? 'active' : 'paused'}</div>
       </div>
       ${rowActions(`/admin/recipients/${r.id}/edit`, `/admin/recipients/${r.id}/delete`)}
     </li>`).join('')}
@@ -466,8 +466,8 @@ export function renderRecipientForm(
     ])}
   `;
   const action = isNew ? '/admin/recipients' : `/admin/recipients/${recipient?.id}`;
-  const body = `<h2 class="text-lg font-medium text-gray-900">${isNew ? 'Add recipient' : 'Edit recipient'}</h2>
-  <p class="mt-1 text-sm text-gray-600">Delivery: Monday 08:00 ET. (Cadence is fixed in v1.)</p>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">${isNew ? 'Add recipient' : 'Edit recipient'}</h2>
+  <p class="mt-1 text-sm ga-text">Delivery: Monday 08:00 ET. (Cadence is fixed in v1.)</p>
   <div class="mt-4 bg-white border border-gray-200 rounded-md p-5">
     ${renderForm(action, fields, isNew ? 'Create recipient' : 'Save changes')}
   </div>`;
@@ -487,16 +487,16 @@ const OPS_CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function renderOpsNoticesList(notices: OpsNotice[]): string {
-  const body = `<h2 class="text-lg font-medium text-gray-900">System messages</h2>
-  <p class="mt-1 text-sm text-gray-600">Operational notices from the last 50 events. Informational; no action required unless you see a pattern.</p>
+  const body = `<h2 class="text-lg font-medium ga-text-strong">System messages</h2>
+  <p class="mt-1 text-sm ga-text">Operational notices from the last 50 events. Informational; no action required unless you see a pattern.</p>
   ${notices.length === 0 ? emptyState('No system messages. Everything looks quiet.') : `<ul class="mt-4 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${notices.map((n) => `<li class="px-5 py-4">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
-          <div class="text-sm font-medium text-gray-900">${escapeHtml(OPS_CATEGORY_LABELS[n.category] ?? n.category)}</div>
-          <div class="mt-1 text-sm text-gray-700">${escapeHtml(n.message)}</div>
+          <div class="text-sm font-medium ga-text-strong">${escapeHtml(OPS_CATEGORY_LABELS[n.category] ?? n.category)}</div>
+          <div class="mt-1 text-sm ga-text">${escapeHtml(n.message)}</div>
         </div>
-        <div class="text-xs text-gray-500 tnum shrink-0">${escapeHtml(n.created_at)}</div>
+        <div class="text-xs ga-text-muted tnum shrink-0">${escapeHtml(n.created_at)}</div>
       </div>
     </li>`).join('')}
   </ul>`}`;

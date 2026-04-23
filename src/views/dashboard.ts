@@ -92,12 +92,12 @@ function renderChipBar(filters: DashboardViewData['filters'], windowPreset: stri
   const chip = (label: string, href: string, active: boolean): string => {
     const cls = active
       ? 'inline-flex items-center gap-1.5 rounded-full border border-blue-600 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700'
-      : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50 hover:border-gray-400';
+      : 'inline-flex items-center gap-1.5 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs ga-text hover:bg-gray-50 hover:border-gray-400';
     return `<a href="${href}" class="${cls}">${escapeHtml(label)}</a>`;
   };
   const hasAny = sev !== 'all' || shift !== 'all';
   return `<div class="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
-    <span class="text-xs text-gray-500 mr-1">Show:</span>
+    <span class="text-xs ga-text-muted mr-1">Show:</span>
     ${chip('All flags', baseParams({ severity: 'all' }), sev === 'all')}
     ${chip('Red only', baseParams({ severity: 'red' }), sev === 'red')}
     ${chip('Yellow only', baseParams({ severity: 'yellow' }), sev === 'yellow')}
@@ -107,7 +107,7 @@ function renderChipBar(filters: DashboardViewData['filters'], windowPreset: stri
     ${chip('Day', baseParams({ shift: 'Day' }), shift === 'Day')}
     ${chip('Swing', baseParams({ shift: 'Swing' }), shift === 'Swing')}
     ${chip('Overnight', baseParams({ shift: 'Overnight' }), shift === 'Overnight')}
-    ${hasAny ? `<a href="/" class="ml-1 text-xs text-gray-500 hover:text-blue-600 underline">Clear</a>` : ''}
+    ${hasAny ? `<a href="/" class="ml-1 text-xs ga-text-muted hover:text-blue-600 underline">Clear</a>` : ''}
   </div>`;
 }
 
@@ -115,15 +115,15 @@ function renderWelcomePanel(): string {
   return `<aside id="welcome-panel" class="mb-4 bg-white border border-blue-200 rounded-md p-4 sm:p-5">
   <div class="flex items-start justify-between gap-3">
     <div class="min-w-0">
-      <h2 class="text-base font-semibold text-gray-900">Welcome to Guardian Angel</h2>
-      <p class="mt-1 text-sm text-gray-700">This is the compliance dashboard for Lowe's Guardian Angel. Red, yellow, and green flags cover missing shift notes and content that falls outside your rules. Everything on this screen is synthetic demo data — click any location to drill down, or open <a href="/rules" class="text-blue-600 hover:underline">Rules</a> to tune how flags are generated.</p>
+      <h2 class="text-base font-semibold ga-text-strong">Welcome to Guardian Angel</h2>
+      <p class="mt-1 text-sm ga-text">This is the compliance dashboard for Lowe's Guardian Angel. Red, yellow, and green flags cover missing shift notes and content that falls outside your rules. Everything on this screen is synthetic demo data — click any location to drill down, or open <a href="/rules" class="text-blue-600 hover:underline">Rules</a> to tune how flags are generated.</p>
     </div>
     <button type="button"
             hx-post="/ui/welcome/dismiss"
             hx-target="#welcome-panel"
             hx-swap="outerHTML"
             aria-label="Dismiss welcome message"
-            class="shrink-0 inline-flex items-center justify-center min-h-[32px] min-w-[32px] -mt-1 -mr-1 p-1 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600">
+            class="shrink-0 inline-flex items-center justify-center min-h-[32px] min-w-[32px] -mt-1 -mr-1 p-1 rounded-md ga-text-muted hover:bg-gray-100 hover:ga-text focus:outline-none focus:ring-2 focus:ring-blue-600">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 10M15 5L5 15"/>
       </svg>
@@ -137,10 +137,10 @@ function renderTitleRow(data: DashboardViewData): string {
   const scopeLabel = 'All locations'; // Phase 11 will swap to user.role-aware label
   return `<div class="flex items-start justify-between gap-4 flex-wrap">
   <div>
-    <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
-    <p class="mt-1 text-sm text-gray-600">${escapeHtml(data.window.label)} · ${scopeLabel}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">Dashboard</h1>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(data.window.label)} · ${scopeLabel}</p>
   </div>
-  <a href="/digest/preview" class="inline-flex items-center justify-center min-h-[44px] px-3 rounded-md border border-gray-300 bg-white text-sm text-gray-900 hover:bg-gray-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600">
+  <a href="/digest/preview" class="inline-flex items-center justify-center min-h-[44px] px-3 rounded-md border border-gray-300 bg-white text-sm ga-text-strong hover:bg-gray-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600">
     Preview this week's email
   </a>
 </div>`;
@@ -168,13 +168,13 @@ function renderFilter(data: DashboardViewData): string {
   </summary>
   <form method="get" action="/" class="mt-3 bg-white border border-gray-200 rounded-md p-4 space-y-4">
     <div>
-      <label for="f-window" class="block text-sm font-medium text-gray-900">Date range</label>
+      <label for="f-window" class="block text-sm font-medium ga-text-strong">Date range</label>
       <select id="f-window" name="window" class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
         ${presets.map((p) => `<option value="${p.value}" ${presetSelected(p.value)}>${escapeHtml(p.label)}</option>`).join('')}
       </select>
     </div>
     <div>
-      <label class="block text-sm font-medium text-gray-900">Severity</label>
+      <label class="block text-sm font-medium ga-text-strong">Severity</label>
       <div class="mt-1 flex flex-wrap gap-2">
         ${renderSeverityChip('all', 'All', data.filters.severity)}
         ${renderSeverityChip('red', 'Red', data.filters.severity)}
@@ -184,7 +184,7 @@ function renderFilter(data: DashboardViewData): string {
     </div>
     <div class="flex gap-2 pt-2 border-t border-gray-200">
       <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">Apply</button>
-      <a href="/" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Reset</a>
+      <a href="/" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Reset</a>
     </div>
   </form>
 </details>`;
@@ -194,7 +194,7 @@ function renderSeverityChip(value: string, label: string, selected: string | und
   const active = (selected ?? 'all') === value;
   const classes = active
     ? 'px-3 min-h-[44px] rounded-md border border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium'
-    : 'px-3 min-h-[44px] rounded-md border border-gray-300 bg-white text-gray-700 text-sm hover:bg-gray-50';
+    : 'px-3 min-h-[44px] rounded-md border border-gray-300 bg-white ga-text text-sm hover:bg-gray-50';
   return `<label class="${classes} inline-flex items-center cursor-pointer">
   <input type="radio" name="severity" value="${value}" ${active ? 'checked' : ''} class="sr-only">${escapeHtml(label)}
 </label>`;
@@ -233,7 +233,7 @@ function tile(p: TileProps): string {
 
   return `<div class="bg-white border border-gray-200 rounded-md p-5">
   <div class="flex items-baseline gap-2">
-    <div class="text-3xl font-semibold tnum text-gray-900"
+    <div class="text-3xl font-semibold tnum ga-text-strong"
          data-count-to="${escapeHtml(countTo)}"
          data-count-unit="${escapeHtml(unit)}"
          data-count-decimals="${decimals}"
@@ -241,7 +241,7 @@ function tile(p: TileProps): string {
     ${arrow}
   </div>
   <div class="mt-1 flex items-baseline justify-between gap-2">
-    <div class="text-sm text-gray-600">${escapeHtml(p.label)}</div>
+    <div class="text-sm ga-text">${escapeHtml(p.label)}</div>
     ${deltaHtml}
   </div>
 </div>`;
@@ -250,7 +250,7 @@ function tile(p: TileProps): string {
 function renderDelta(p: TileProps): string {
   const diff = p.current - p.prior;
   if (!Number.isFinite(diff) || Math.abs(diff) < (p.decimals && p.decimals > 0 ? 0.05 : 0.5)) {
-    return `<span class="text-xs text-gray-500" title="No change vs. prior period">— vs last period</span>`;
+    return `<span class="text-xs ga-text-muted" title="No change vs. prior period">— vs last period</span>`;
   }
   const isWorse = p.higherIsWorse ? diff > 0 : diff < 0;
   const color = isWorse ? 'text-red-700' : 'text-green-700';
@@ -263,7 +263,7 @@ function renderDelta(p: TileProps): string {
 function renderComplianceArrow(delta: number): string {
   // Compliance is a percentage; ignore tiny wobble.
   if (Math.abs(delta) < 0.1) {
-    return `<svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Flat vs. last period">
+    return `<svg class="w-5 h-5 ga-text-subtle" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true" title="Flat vs. last period">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h12"/>
     </svg>`;
   }
@@ -289,11 +289,11 @@ function renderLocationsList(
       (filters.severity && filters.severity !== 'all') ||
       (filters.shift && filters.shift !== 'all');
     if (filteredToNothing && (totalUnfiltered ?? 0) > 0) {
-      return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
-<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No locations match the current filter. <a href="/" class="text-blue-600 hover:underline">Clear filter</a>.</p>`;
+      return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
+<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No locations match the current filter. <a href="/" class="text-blue-600 hover:underline">Clear filter</a>.</p>`;
     }
-    return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
-<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No locations configured yet. Add one in Settings.</p>`;
+    return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
+<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No locations configured yet. Add one in Settings.</p>`;
   }
 
   const rowsHtml = rows
@@ -312,24 +312,24 @@ function renderLocationsList(
   <a href="/location/${encodeURIComponent(r.location_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
       ${rollupPill(r.red_content, r.yellow_count, r.missing_count)}
-      <span class="text-sm font-medium text-gray-900 truncate">${escapeHtml(r.location_name)}</span>
-      <span class="hidden sm:inline text-xs text-gray-500">${escapeHtml(locationTypeLabel(r.location_type))}</span>
+      <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(r.location_name)}</span>
+      <span class="hidden sm:inline text-xs ga-text-muted">${escapeHtml(locationTypeLabel(r.location_type))}</span>
     </div>
     <div class="flex items-center gap-3 shrink-0">
       <span class="hidden sm:inline" aria-hidden="true">${sparkHtml}</span>
-      <span class="text-sm text-gray-600 tnum">${escapeHtml(countsOrEmpty)}</span>
+      <span class="text-sm ga-text tnum">${escapeHtml(countsOrEmpty)}</span>
     </div>
   </a>
 </li>`;
     })
     .join('');
 
-  return `<h2 class="mt-8 text-lg font-medium text-gray-900">Locations this week</h2>
+  return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Locations this week</h2>
 <ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">${rowsHtml}</ul>`;
 }
 
 function renderTrendSection(trend: TrendSeries[]): string {
-  return `<h2 class="mt-8 text-lg font-medium text-gray-900">Compliance trend</h2>
+  return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Compliance trend</h2>
 <div class="mt-3 bg-white border border-gray-200 rounded-md p-5">
   ${renderTrendChart(trend)}
 </div>`;

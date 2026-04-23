@@ -106,18 +106,18 @@ export function contextualHelp(key: HelpKey): string {
   const entry = HELP[key];
   if (!entry) return '';
   const paragraphs = entry.paragraphs
-    .map((p) => `<p class="text-sm text-gray-700 leading-6">${escapeText(p)}</p>`)
+    .map((p) => `<p class="text-sm ga-text leading-6">${escapeText(p)}</p>`)
     .join('');
   return `<details class="mt-4 rounded-md border border-gray-200 bg-white">
-  <summary class="flex items-center justify-between gap-3 cursor-pointer select-none px-5 py-3 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
+  <summary class="flex items-center justify-between gap-3 cursor-pointer select-none px-5 py-3 min-h-[44px] text-sm ga-text hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
     <span class="inline-flex items-center gap-2">
-      <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
+      <svg class="w-4 h-4 ga-text-subtle" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
         <circle cx="10" cy="10" r="8" stroke-width="1.5"/>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 14v-3m0-3.5h.01"/>
       </svg>
-      <span class="font-medium text-gray-900">${escapeText(entry.title)}</span>
+      <span class="font-medium ga-text-strong">${escapeText(entry.title)}</span>
     </span>
-    <span class="text-xs text-gray-500">Click to expand</span>
+    <span class="text-xs ga-text-muted">Click to expand</span>
   </summary>
   <div class="px-5 pb-5 pt-1 space-y-2">
     ${paragraphs}

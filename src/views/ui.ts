@@ -15,13 +15,13 @@ export function severityPill(
   label?: string,
 ): string {
   const cfg = {
-    red:    { bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-100',    dot: 'bg-red-600',    defaultLabel: 'Red' },
-    yellow: { bg: 'bg-amber-50',  text: 'text-amber-800',  border: 'border-amber-100',  dot: 'bg-amber-500',  defaultLabel: 'Yellow' },
-    green:  { bg: 'bg-green-50',  text: 'text-green-800',  border: 'border-green-100',  dot: 'bg-green-600',  defaultLabel: 'Green' },
+    red:    { sev: 'ga-sev-red',    dot: 'ga-sev-red-dot',    defaultLabel: 'Red' },
+    yellow: { sev: 'ga-sev-amber',  dot: 'ga-sev-amber-dot',  defaultLabel: 'Yellow' },
+    green:  { sev: 'ga-sev-green',  dot: 'ga-sev-green-dot',  defaultLabel: 'Green' },
   }[severity];
 
   const text = label ?? cfg.defaultLabel;
-  return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md ${cfg.bg} ${cfg.text} text-xs font-medium border ${cfg.border}">
+  return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${cfg.sev}">
   <span class="w-1.5 h-1.5 rounded-full ${cfg.dot}" aria-hidden="true"></span>
   ${escapeHtml(text)}
 </span>`;
@@ -88,14 +88,14 @@ export function renderBreadcrumb(items: BreadcrumbItem[]): string {
   const middle = items.slice(1, -1);
 
   const rootHtml = root.href
-    ? `<li class="shrink-0"><a href="${escapeHtml(root.href)}" class="hover:text-blue-600">${escapeHtml(root.label)}</a></li>`
+    ? `<li class="shrink-0"><a href="${escapeHtml(root.href)}" class="ga-link">${escapeHtml(root.label)}</a></li>`
     : `<li class="shrink-0">${escapeHtml(root.label)}</li>`;
 
   const middleDesktop = middle
     .map(
       (m) =>
         `<li aria-hidden="true" class="hidden md:inline shrink-0">›</li>
-<li class="hidden md:inline shrink-0">${m.href ? `<a href="${escapeHtml(m.href)}" class="hover:text-blue-600">${escapeHtml(m.label)}</a>` : escapeHtml(m.label)}</li>`,
+<li class="hidden md:inline shrink-0">${m.href ? `<a href="${escapeHtml(m.href)}" class="ga-link">${escapeHtml(m.label)}</a>` : escapeHtml(m.label)}</li>`,
     )
     .join('');
 
@@ -105,9 +105,9 @@ export function renderBreadcrumb(items: BreadcrumbItem[]): string {
 <li aria-hidden="true" class="md:hidden shrink-0">›</li>
 <li class="md:hidden shrink-0">
   <details class="relative inline-block">
-    <summary class="cursor-pointer select-none px-2 py-1 -my-1 text-gray-400 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded" aria-label="Show intermediate levels">…</summary>
-    <div class="absolute left-0 top-full mt-1 min-w-[12rem] rounded-md border border-gray-200 bg-white shadow-sm py-1 z-10">
-      ${middle.map((m) => `<a href="${escapeHtml(m.href ?? '#')}" class="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">${escapeHtml(m.label)}</a>`).join('')}
+    <summary class="cursor-pointer select-none px-2 py-1 -my-1 ga-text-subtle focus:outline-none focus:ring-2 focus:ring-blue-600 rounded" aria-label="Show intermediate levels">…</summary>
+    <div class="absolute left-0 top-full mt-1 min-w-[12rem] rounded-md border ga-surface shadow-sm py-1 z-10" style="border-color: var(--ga-border);">
+      ${middle.map((m) => `<a href="${escapeHtml(m.href ?? '#')}" class="block px-3 py-2 text-sm ga-text hover:bg-gray-50 focus:outline-none focus:bg-gray-50">${escapeHtml(m.label)}</a>`).join('')}
     </div>
   </details>
 </li>`;
@@ -115,9 +115,9 @@ export function renderBreadcrumb(items: BreadcrumbItem[]): string {
 
   const currentHtml = `
 <li aria-hidden="true" class="shrink-0">›</li>
-<li class="text-gray-900 truncate min-w-0 max-w-[14rem] sm:max-w-none">${escapeHtml(current.label)}</li>`;
+<li class="ga-text-strong truncate min-w-0 max-w-[14rem] sm:max-w-none">${escapeHtml(current.label)}</li>`;
 
-  return `<nav class="text-sm text-gray-500" aria-label="Breadcrumb">
+  return `<nav class="text-sm ga-text-muted" aria-label="Breadcrumb">
   <ol class="flex items-center gap-1 flex-nowrap">
     ${rootHtml}${middleDesktop}${middleMobile}${currentHtml}
   </ol>

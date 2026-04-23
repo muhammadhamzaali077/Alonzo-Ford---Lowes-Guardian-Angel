@@ -7,13 +7,14 @@
 import type { TrendSeries } from '../db/queries/compliance-score.js';
 import { escapeHtml } from './layout.js';
 
-const LINE_COLORS = [
-  '#2563eb', // blue-600 — primary accent
-  '#059669', // emerald-600
-  '#d97706', // amber-600
-  '#7c3aed', // violet-600
-  '#db2777', // pink-600
-  '#0891b2', // cyan-600
+// 4-line calm palette (design-tokens.ts mirrors these as --ga-chart-1..4).
+// If a future layout renders >4 locations, extend this list and the tokens
+// together, keeping the "no neon, no brand accent" constraint.
+const LINE_COLOR_VARS = [
+  '--ga-chart-1', // deep blue — primary
+  '--ga-chart-2', // slate    — neutral
+  '--ga-chart-3', // emerald  — positive
+  '--ga-chart-4', // amber    — warm
 ];
 
 export interface TrendChartOptions {
@@ -30,7 +31,7 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
   const paddingBottom = 32; // x-axis date labels
 
   if (series.length === 0 || series[0]!.points.length === 0) {
-    return `<div class="flex items-center justify-center h-56 text-sm text-gray-500">No trend data for this period.</div>`;
+    return `<div class="flex items-center justify-center h-56 text-sm ga-text-muted">No trend data for this period.</div>`;
   }
 
   const chartW = width - paddingLeft - paddingRight;
@@ -43,27 +44,30 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
   };
   const yFor = (pct: number): number => paddingTop + chartH - (pct / 100) * chartH;
 
-  // Gridlines at 25/50/75/100
+  // Gridlines at 25/50/75/100 — use tokens for stroke + label color.
   const gridLines = [25, 50, 75, 100]
     .map((pct) => {
       const y = yFor(pct);
-      return `<line x1="${paddingLeft}" y1="${y}" x2="${paddingLeft + chartW}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>
-      <text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#6b7280">${pct}%</text>`;
+      return `<line x1="${paddingLeft}" y1="${y}" x2="${paddingLeft + chartW}" y2="${y}" style="stroke: var(--ga-border)" stroke-width="1"/>
+      <text x="${paddingLeft - 8}" y="${y + 4}" text-anchor="end" font-size="11" style="fill: var(--ga-text-muted)">${pct}%</text>`;
     })
     .join('\n');
 
   // Baseline at 0%
-  const baseline = `<line x1="${paddingLeft}" y1="${yFor(0)}" x2="${paddingLeft + chartW}" y2="${yFor(0)}" stroke="#d1d5db" stroke-width="1"/>
-  <text x="${paddingLeft - 8}" y="${yFor(0) + 4}" text-anchor="end" font-size="11" fill="#6b7280">0%</text>`;
+  const baseline = `<line x1="${paddingLeft}" y1="${yFor(0)}" x2="${paddingLeft + chartW}" y2="${yFor(0)}" style="stroke: var(--ga-border-strong)" stroke-width="1"/>
+  <text x="${paddingLeft - 8}" y="${yFor(0) + 4}" text-anchor="end" font-size="11" style="fill: var(--ga-text-muted)">0%</text>`;
 
   // Data lines. Each line gets its own <g> with:
   //   - the path itself (unstyled pointer-events: none so it can't steal hover)
   //   - per-point hoverable <circle> with SVG <title> for native tooltips
   //   - the circle is clickable and navigates to /location/:id (T119
   //     click-to-scope) — server-side nav, no JS handler needed.
+  //
+  // Colors reference CSS custom properties via inline `style` so a single
+  // token edit in layout.ts re-themes every chart on the next paint.
   const paths = series
     .map((s, idx) => {
-      const color = LINE_COLORS[idx % LINE_COLORS.length];
+      const colorVar = LINE_COLOR_VARS[idx % LINE_COLOR_VARS.length];
       const d = s.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${xFor(i).toFixed(1)},${yFor(p.pct).toFixed(1)}`)
         .join(' ');
@@ -74,14 +78,14 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
           const cy = yFor(p.pct).toFixed(1);
           const pct = Math.round(p.pct);
           return `<a href="${locHref}" aria-label="${escapeHtml(s.location_name)} — ${pct}% compliance on ${escapeHtml(p.date)}">
-          <circle cx="${cx}" cy="${cy}" r="3.5" fill="${color}" opacity="0" class="ga-trend-dot" tabindex="0">
+          <circle cx="${cx}" cy="${cy}" r="3.5" style="fill: var(${colorVar})" opacity="0" class="ga-trend-dot" tabindex="0">
             <title>${escapeHtml(s.location_name)} · ${escapeHtml(p.date)} · ${pct}% compliance</title>
           </circle>
         </a>`;
         })
         .join('');
       return `<g>
-        <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>
+        <path d="${d}" fill="none" style="stroke: var(${colorVar})" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>
         ${dots}
       </g>`;
     })
@@ -97,18 +101,18 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
     { x: xFor(midIdx), anchor: 'middle', text: midDate },
     { x: xFor(dateCount - 1), anchor: 'end', text: lastDate },
   ]
-    .map((l) => `<text x="${l.x}" y="${height - 12}" text-anchor="${l.anchor}" font-size="11" fill="#6b7280">${escapeHtml(l.text)}</text>`)
+    .map((l) => `<text x="${l.x}" y="${height - 12}" text-anchor="${l.anchor}" font-size="11" style="fill: var(--ga-text-muted)">${escapeHtml(l.text)}</text>`)
     .join('\n');
 
   // Legend below chart — each entry is a link to the corresponding location
   // so users can get to the drill-down from the chart label too.
   const legend = series
     .map((s, idx) => {
-      const color = LINE_COLORS[idx % LINE_COLORS.length];
+      const colorVar = LINE_COLOR_VARS[idx % LINE_COLOR_VARS.length];
       return `<li>
       <a href="/location/${encodeURIComponent(s.location_id)}"
-         class="inline-flex items-center gap-1.5 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
-        <span class="inline-block w-3 h-[2px]" style="background:${color}"></span>
+         class="inline-flex items-center gap-1.5 ga-text-muted hover:text-[color:var(--ga-blue-strong)] ga-transition focus:outline-none focus:ring-2 focus:ring-blue-600 rounded">
+        <span class="inline-block w-3 h-[2px]" style="background: var(${colorVar})"></span>
         <span>${escapeHtml(s.location_name)}</span>
       </a>
     </li>`;
@@ -130,7 +134,7 @@ export function renderTrendChart(series: TrendSeries[], opts: TrendChartOptions 
 
   return `<div class="space-y-3">
     <div>${svg}</div>
-    <ul class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600">${legend}</ul>
-    <p class="text-xs text-gray-500">Tip: hover a point to see the date and compliance percentage, click to open that location.</p>
+    <ul class="flex flex-wrap gap-x-5 gap-y-1 text-xs ga-text-muted">${legend}</ul>
+    <p class="text-xs ga-text-muted">Tip: hover a point to see the date and compliance percentage, click to open that location.</p>
   </div>`;
 }

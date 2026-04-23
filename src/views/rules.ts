@@ -15,8 +15,8 @@ export function renderRulesList(rules: Rule[]): string {
   return `<section>
   <div class="flex items-start justify-between gap-4 flex-wrap">
     <div>
-      <h1 class="text-2xl font-semibold text-gray-900">Rules</h1>
-      <p class="mt-1 text-sm text-gray-600">Edit what counts as a problem. Changes apply on the next flag check.</p>
+      <h1 class="text-2xl font-semibold ga-text-strong">Rules</h1>
+      <p class="mt-1 text-sm ga-text">Edit what counts as a problem. Changes apply on the next flag check.</p>
     </div>
   </div>
 
@@ -26,13 +26,13 @@ export function renderRulesList(rules: Rule[]): string {
     <li class="px-5 py-4">
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div class="min-w-0">
-          <h3 class="text-base font-medium text-gray-900">${escapeHtml(r.name)}</h3>
-          <p class="mt-1 text-sm text-gray-600">${escapeHtml(r.description)}</p>
-          <p class="mt-1 text-xs text-gray-500">Version ${r.version}</p>
+          <h3 class="text-base font-medium ga-text-strong">${escapeHtml(r.name)}</h3>
+          <p class="mt-1 text-sm ga-text">${escapeHtml(r.description)}</p>
+          <p class="mt-1 text-xs ga-text-muted">Version ${r.version}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <a href="/rules/${encodeURIComponent(r.rule_key)}/history" class="text-sm text-gray-700 hover:text-blue-600 hover:underline py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Previous versions</a>
-          <a href="/rules/${encodeURIComponent(r.rule_key)}/edit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Edit</a>
+          <a href="/rules/${encodeURIComponent(r.rule_key)}/history" class="text-sm ga-text hover:text-blue-600 hover:underline py-2 px-1 -my-2 -mx-1 min-h-[44px] inline-flex items-center">Previous versions</a>
+          <a href="/rules/${encodeURIComponent(r.rule_key)}/edit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Edit</a>
         </div>
       </div>
     </li>`)
@@ -68,8 +68,8 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
   return `<section class="max-w-3xl">
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">${escapeHtml(rule.name)}</h1>
-    <p class="mt-1 text-sm text-gray-600">Version ${rule.version}${rule.created_by ? ' · edited by ' + escapeHtml(rule.created_by) : ''}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">${escapeHtml(rule.name)}</h1>
+    <p class="mt-1 text-sm ga-text">Version ${rule.version}${rule.created_by ? ' · edited by ' + escapeHtml(rule.created_by) : ''}</p>
   </div>
 
   ${savedVersion ? renderSavedBanner(savedVersion) : ''}
@@ -78,14 +78,14 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
   <form method="post" action="/rules/${encodeURIComponent(rule.rule_key)}" class="mt-6 space-y-6">
 
     <div>
-      <label for="rule-name" class="block text-sm font-medium text-gray-900">Rule name</label>
+      <label for="rule-name" class="block text-sm font-medium ga-text-strong">Rule name</label>
       <input id="rule-name" name="name" type="text" value="${escapeHtml(rule.name)}"
              class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
     </div>
 
     <div>
-      <label for="rule-desc" class="block text-sm font-medium text-gray-900">What this rule flags</label>
-      <p class="mt-0.5 text-xs text-gray-500">What managers see when a note trips this rule.</p>
+      <label for="rule-desc" class="block text-sm font-medium ga-text-strong">What this rule flags</label>
+      <p class="mt-0.5 text-xs ga-text-muted">What managers see when a note trips this rule.</p>
       <textarea id="rule-desc" name="description" rows="3"
                 class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">${escapeHtml(rule.description)}</textarea>
     </div>
@@ -95,11 +95,11 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
     ${renderImpactPreview(rule.rule_key, impact)}
 
     <details class="rounded-md border border-gray-200 bg-white">
-      <summary class="cursor-pointer select-none px-4 py-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
+      <summary class="cursor-pointer select-none px-4 py-3 text-sm font-medium ga-text-strong focus:outline-none focus:ring-2 focus:ring-blue-600 rounded-md">
         Advanced: instructions for the system
       </summary>
       <div class="px-4 pb-4 border-t border-gray-200 pt-3">
-        <p class="text-xs text-gray-500">These are the detailed instructions the system uses to decide borderline cases. Most people never need to change this.</p>
+        <p class="text-xs ga-text-muted">These are the detailed instructions the system uses to decide borderline cases. Most people never need to change this.</p>
         <textarea name="prompt_template" rows="8"
                   class="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
                   aria-label="Advanced instructions">${escapeHtml(rule.prompt_template)}</textarea>
@@ -112,7 +112,7 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
         Save changes
       </button>
       <button type="submit" name="intent" value="save_and_rerun"
-              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+              class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
               onclick="var f=this.form; if(!f) return; var n=document.getElementById('rerun-skeleton'); if(n) n.style.display='block'; this.setAttribute('disabled','true'); this.textContent='Updating flags…';">
         Save &amp; update flags now
       </button>
@@ -125,7 +125,7 @@ export function renderRuleEditForm(opts: RuleEditFormOptions): string {
       <div class="ga-shimmer h-3 w-4/5"></div>
       <div class="ga-shimmer h-3 w-2/5"></div>
     </div>
-    <p class="text-xs text-gray-500 text-center">Re-checking notes against the new rule — this usually takes a few seconds.</p>
+    <p class="text-xs ga-text-muted text-center">Re-checking notes against the new rule — this usually takes a few seconds.</p>
   </div>
   ${contextualHelp('rule-edit')}
 </section>`;
@@ -190,9 +190,9 @@ function previewHxAttrs(ruleKey: string): string {
 export function renderImpactPreview(ruleKey: string, impact: ImpactPreview | null): string {
   if (impact === null) {
     // LLM-evaluated rule — no cheap preview possible.
-    return `<div id="impact-preview" class="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-      <div class="font-medium text-gray-900">Live preview not available for this rule</div>
-      <p class="mt-1 text-xs text-gray-600">This rule asks the system to read note content, which takes a few seconds per note. Click <strong>Save &amp; update flags now</strong> to see the effect across recent notes.</p>
+    return `<div id="impact-preview" class="rounded-md border border-gray-200 bg-gray-50 p-4 text-sm ga-text">
+      <div class="font-medium ga-text-strong">Live preview not available for this rule</div>
+      <p class="mt-1 text-xs ga-text">This rule asks the system to read note content, which takes a few seconds per note. Click <strong>Save &amp; update flags now</strong> to see the effect across recent notes.</p>
     </div>`;
   }
   const pct = impact.total_in_window > 0
@@ -210,27 +210,27 @@ function renderCopyPasteConfig(ruleKey: string, config: Record<string, unknown>)
   const windowSize = Number(config.window_size ?? 20);
   const hx = previewHxAttrs(ruleKey);
   return `<div>
-  <label for="cfg-threshold" class="block text-sm font-medium text-gray-900">How similar is too similar?</label>
-  <p class="mt-0.5 text-xs text-gray-500">Lower = more sensitive. Higher = only near-identical notes flagged.</p>
+  <label for="cfg-threshold" class="block text-sm font-medium ga-text-strong">How similar is too similar?</label>
+  <p class="mt-0.5 text-xs ga-text-muted">Lower = more sensitive. Higher = only near-identical notes flagged.</p>
   <div class="mt-2 flex items-center gap-4">
     <input id="cfg-threshold" name="cfg_similarity_threshold" type="range" min="0.5" max="1.0" step="0.05" value="${threshold.toFixed(2)}"
            class="flex-1 accent-blue-600" oninput="document.getElementById('cfg-threshold-value').textContent=Number(this.value).toFixed(2)"
            ${hx}>
-    <span id="cfg-threshold-value" class="text-base font-medium tnum text-gray-900 w-12 text-right">${threshold.toFixed(2)}</span>
+    <span id="cfg-threshold-value" class="text-base font-medium tnum ga-text-strong w-12 text-right">${threshold.toFixed(2)}</span>
   </div>
-  <div class="mt-1 flex justify-between text-xs text-gray-500">
+  <div class="mt-1 flex justify-between text-xs ga-text-muted">
     <span>0.50 (very sensitive)</span>
     <span>1.00 (identical only)</span>
   </div>
 </div>
 
 <div>
-  <label for="cfg-window" class="block text-sm font-medium text-gray-900">Notes to compare against</label>
-  <p class="mt-0.5 text-xs text-gray-500">How many of the angel's most recent notes to check.</p>
+  <label for="cfg-window" class="block text-sm font-medium ga-text-strong">Notes to compare against</label>
+  <p class="mt-0.5 text-xs ga-text-muted">How many of the angel's most recent notes to check.</p>
   <div class="mt-2 flex items-center gap-3">
     <input id="cfg-window" name="cfg_window_size" type="number" min="5" max="100" value="${windowSize}"
            class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600">
-    <span class="text-sm text-gray-700">most recent notes</span>
+    <span class="text-sm ga-text">most recent notes</span>
   </div>
 </div>`;
 }
@@ -240,21 +240,21 @@ function renderShortNoteConfig(ruleKey: string, config: Record<string, unknown>)
   const dayProgram = Number(config.day_program_min_words ?? 15);
   const hx = previewHxAttrs(ruleKey);
   return `<fieldset>
-  <legend class="block text-sm font-medium text-gray-900">Minimum note length</legend>
+  <legend class="block text-sm font-medium ga-text-strong">Minimum note length</legend>
   <div class="mt-2 space-y-2">
     <div class="flex items-center gap-3">
-      <label for="cfg-residential" class="text-sm text-gray-700 w-44">Residential shifts under</label>
+      <label for="cfg-residential" class="text-sm ga-text w-44">Residential shifts under</label>
       <input id="cfg-residential" name="cfg_residential_min_words" type="number" min="1" max="200" value="${residential}"
              class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600"
              ${hx}>
-      <span class="text-sm text-gray-700">words</span>
+      <span class="text-sm ga-text">words</span>
     </div>
     <div class="flex items-center gap-3">
-      <label for="cfg-dayprog" class="text-sm text-gray-700 w-44">Day program under</label>
+      <label for="cfg-dayprog" class="text-sm ga-text w-44">Day program under</label>
       <input id="cfg-dayprog" name="cfg_day_program_min_words" type="number" min="1" max="200" value="${dayProgram}"
              class="w-24 rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600"
              ${hx}>
-      <span class="text-sm text-gray-700">words</span>
+      <span class="text-sm ga-text">words</span>
     </div>
   </div>
 </fieldset>`;
@@ -274,8 +274,8 @@ export function renderRulesHistory(ruleKey: string, history: Rule[]): string {
   return `<section class="max-w-3xl">
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">Previous versions</h1>
-    <p class="mt-1 text-sm text-gray-600">Every edit creates a new version. You can restore any prior version — restoring doesn't delete the edits since.</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">Previous versions</h1>
+    <p class="mt-1 text-sm ga-text">Every edit creates a new version. You can restore any prior version — restoring doesn't delete the edits since.</p>
   </div>
   <ul class="mt-6 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
     ${history
@@ -284,17 +284,17 @@ export function renderRulesHistory(ruleKey: string, history: Rule[]): string {
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <h3 class="text-sm font-medium text-gray-900">Version ${r.version}</h3>
+            <h3 class="text-sm font-medium ga-text-strong">Version ${r.version}</h3>
             ${r.is_active ? '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-green-50 text-green-800 text-xs font-medium border border-green-100"><span class="w-1.5 h-1.5 rounded-full bg-green-600"></span>Active</span>' : ''}
           </div>
-          <p class="mt-1 text-xs text-gray-500">${escapeHtml(r.created_at)}${r.created_by ? ' · ' + escapeHtml(r.created_by) : ''}</p>
-          <p class="mt-2 text-sm text-gray-700">${escapeHtml(r.description)}</p>
+          <p class="mt-1 text-xs ga-text-muted">${escapeHtml(r.created_at)}${r.created_by ? ' · ' + escapeHtml(r.created_by) : ''}</p>
+          <p class="mt-2 text-sm ga-text">${escapeHtml(r.description)}</p>
         </div>
         ${r.is_active
           ? ''
           : `<form method="post" action="/rules/${encodeURIComponent(ruleKey)}/revert" class="shrink-0">
               <input type="hidden" name="version" value="${r.version}">
-              <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-gray-900 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Restore this version</button>
+              <button type="submit" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border border-gray-300 bg-white ga-text-strong text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600">Restore this version</button>
             </form>`}
       </div>
     </li>`)

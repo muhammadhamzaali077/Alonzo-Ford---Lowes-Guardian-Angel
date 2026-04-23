@@ -39,33 +39,33 @@ export function renderNoteDetail(data: NoteDetailViewData): string {
   return `<section>
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">Note · ${escapeHtml(dateHuman)} · ${escapeHtml(shiftHuman)}</h1>
-    <p class="mt-1 text-sm text-gray-600">${escapeHtml(n.individual_name)} · ${escapeHtml(n.location_name)}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">Note · ${escapeHtml(dateHuman)} · ${escapeHtml(shiftHuman)}</h1>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(n.individual_name)} · ${escapeHtml(n.location_name)}</p>
   </div>
 
   <article class="mt-6 bg-white border border-gray-200 rounded-md p-5 sm:p-6">
-    <p class="text-base text-gray-900 leading-7 whitespace-pre-wrap">${escapeHtml(n.description)}</p>
+    <p class="text-base ga-text-strong leading-7 whitespace-pre-wrap">${escapeHtml(n.description)}</p>
   </article>
 
   <dl class="mt-6 grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_1fr_max-content_1fr]">
-    <dt class="text-gray-500">Date</dt><dd class="text-gray-900">${escapeHtml(dateHuman)}</dd>
-    <dt class="text-gray-500">Shift</dt><dd class="text-gray-900">${escapeHtml(shiftHuman)}</dd>
-    <dt class="text-gray-500">Angel</dt><dd class="text-gray-900">${escapeHtml(n.angel_name ?? 'Unknown')}</dd>
-    <dt class="text-gray-500">Individual</dt><dd class="text-gray-900">${escapeHtml(n.individual_name)}</dd>
-    <dt class="text-gray-500">Location</dt><dd class="text-gray-900">${escapeHtml(n.location_name)} · ${escapeHtml(locationTypeLabel(n.location_type as 'group_home' | 'host_home' | 'day_program'))}</dd>
-    <dt class="text-gray-500">Notification level</dt><dd class="text-gray-900">${escapeHtml(n.notification_level)}</dd>
-    <dt class="text-gray-500">Type</dt><dd class="text-gray-900">${escapeHtml(n.type)}</dd>
-    ${n.summary ? `<dt class="text-gray-500">Summary</dt><dd class="text-gray-900">${escapeHtml(n.summary)}</dd>` : ''}
+    <dt class="ga-text-muted">Date</dt><dd class="ga-text-strong">${escapeHtml(dateHuman)}</dd>
+    <dt class="ga-text-muted">Shift</dt><dd class="ga-text-strong">${escapeHtml(shiftHuman)}</dd>
+    <dt class="ga-text-muted">Angel</dt><dd class="ga-text-strong">${escapeHtml(n.angel_name ?? 'Unknown')}</dd>
+    <dt class="ga-text-muted">Individual</dt><dd class="ga-text-strong">${escapeHtml(n.individual_name)}</dd>
+    <dt class="ga-text-muted">Location</dt><dd class="ga-text-strong">${escapeHtml(n.location_name)} · ${escapeHtml(locationTypeLabel(n.location_type as 'group_home' | 'host_home' | 'day_program'))}</dd>
+    <dt class="ga-text-muted">Notification level</dt><dd class="ga-text-strong">${escapeHtml(n.notification_level)}</dd>
+    <dt class="ga-text-muted">Type</dt><dd class="ga-text-strong">${escapeHtml(n.type)}</dd>
+    ${n.summary ? `<dt class="ga-text-muted">Summary</dt><dd class="ga-text-strong">${escapeHtml(n.summary)}</dd>` : ''}
   </dl>
 
-  <h2 class="mt-8 text-lg font-medium text-gray-900">Flags</h2>
+  <h2 class="mt-8 text-lg font-medium ga-text-strong">Flags</h2>
   ${data.flags.length === 0 ? renderNoFlags() : renderFlagCards(data.flags)}
   ${contextualHelp('note')}
 </section>`;
 }
 
 function renderNoFlags(): string {
-  return `<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No flags on this note.</p>`;
+  return `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No flags on this note.</p>`;
 }
 
 function renderFlagCards(flags: NoteFlagRow[]): string {
@@ -84,10 +84,10 @@ function renderFlagCard(flag: NoteFlagRow): string {
   return `<div class="bg-white border border-gray-200 rounded-md p-4 sm:p-5">
   <div class="flex items-center gap-2 flex-wrap">
     ${pill}
-    <span class="text-xs font-medium text-gray-700">${escapeHtml(label)}</span>
-    <span class="ml-auto text-xs text-gray-500">${escapeHtml(ruleLabel)}</span>
+    <span class="text-xs font-medium ga-text">${escapeHtml(label)}</span>
+    <span class="ml-auto text-xs ga-text-muted">${escapeHtml(ruleLabel)}</span>
   </div>
-  <p class="mt-3 text-sm text-gray-900 leading-6">${escapeHtml(flag.reason)}</p>
+  <p class="mt-3 text-sm ga-text-strong leading-6">${escapeHtml(flag.reason)}</p>
   ${audit}
 </div>`;
 }
@@ -114,7 +114,7 @@ function renderAuditDisclosure(flag: NoteFlagRow): string {
 
   return `<details class="mt-3">
   <summary class="cursor-pointer select-none text-xs text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600 rounded inline-block py-1 -my-1">How was this flagged?</summary>
-  <dl class="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs text-gray-600">${dl}</dl>
+  <dl class="mt-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs ga-text">${dl}</dl>
 </details>`;
 }
 

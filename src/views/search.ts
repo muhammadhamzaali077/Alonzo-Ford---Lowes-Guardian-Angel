@@ -37,18 +37,18 @@ export function searchNotes(q: string, limit: number = 20, db: BetterSqliteDatab
 
 export function renderSearchResults(q: string, hits: SearchHit[]): string {
   if (!q.trim()) {
-    return `<p class="text-sm text-gray-500">Type at least one character to search.</p>`;
+    return `<p class="text-sm ga-text-muted">Type at least one character to search.</p>`;
   }
   if (hits.length === 0) {
-    return `<p class="text-sm text-gray-500">No notes match "${escapeHtml(q)}".</p>`;
+    return `<p class="text-sm ga-text-muted">No notes match "${escapeHtml(q)}".</p>`;
   }
   return `<ul class="divide-y divide-gray-200 bg-white border border-gray-200 rounded-md">
 ${hits
   .map(
     (h) => `<li>
   <a href="/note/${encodeURIComponent(h.tlog_id)}/${encodeURIComponent(String(h.version))}" class="block px-5 py-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
-    <div class="text-xs text-gray-500">${escapeHtml(h.reported_date)} · ${escapeHtml(h.location_name)} · ${escapeHtml(h.angel_name ?? 'Unknown angel')} · ${escapeHtml(h.individual_name)}</div>
-    <p class="mt-1 text-sm text-gray-900">${escapeHtml(h.excerpt)}</p>
+    <div class="text-xs ga-text-muted">${escapeHtml(h.reported_date)} · ${escapeHtml(h.location_name)} · ${escapeHtml(h.angel_name ?? 'Unknown angel')} · ${escapeHtml(h.individual_name)}</div>
+    <p class="mt-1 text-sm ga-text-strong">${escapeHtml(h.excerpt)}</p>
   </a>
 </li>`,
   )

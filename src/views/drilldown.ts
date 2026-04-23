@@ -23,7 +23,7 @@ export function renderLocationView(data: LocationViewData): string {
 
   const listHtml =
     data.angels.length === 0
-      ? `<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No angels assigned to this location yet.</p>`
+      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No angels assigned to this location yet.</p>`
       : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
 ${data.angels
   .map((a) => {
@@ -32,10 +32,10 @@ ${data.angels
   <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(a.angel_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
       ${rollupPill(a.red_content, a.yellow_count, a.missing_count)}
-      <span class="text-sm font-medium text-gray-900 truncate">${escapeHtml(a.angel_name)}</span>
-      <span class="hidden sm:inline text-xs text-gray-500">${escapeHtml(a.angel_role)}</span>
+      <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(a.angel_name)}</span>
+      <span class="hidden sm:inline text-xs ga-text-muted">${escapeHtml(a.angel_role)}</span>
     </div>
-    <span class="text-sm text-gray-600 tnum shrink-0">${escapeHtml(counts)}</span>
+    <span class="text-sm ga-text tnum shrink-0">${escapeHtml(counts)}</span>
   </a>
 </li>`;
   })
@@ -47,10 +47,10 @@ ${data.angels
   return `<section>
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">${escapeHtml(data.location.name)}</h1>
-    <p class="mt-1 text-sm text-gray-600">${escapeHtml(data.window.label)}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">${escapeHtml(data.location.name)}</h1>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(data.window.label)}</p>
   </div>
-  <h2 class="mt-6 text-lg font-medium text-gray-900">Angels at this location</h2>
+  <h2 class="mt-6 text-lg font-medium ga-text-strong">Angels at this location</h2>
   ${listHtml}
   ${missingHtml}
   ${contextualHelp('location')}
@@ -64,16 +64,16 @@ function renderMissingFlagsSection(missing: MissingFlagRow[]): string {
       const date = formatDateWithWeekday(m.scheduled_shift_date);
       return `<li class="px-5 py-3 flex items-center justify-between gap-3 min-h-[44px]">
     <div class="min-w-0">
-      <div class="text-sm font-medium text-gray-900">${escapeHtml(m.individual_name)}</div>
-      <div class="text-xs text-gray-600">${escapeHtml(date)} · ${escapeHtml(m.scheduled_shift_name)} shift</div>
+      <div class="text-sm font-medium ga-text-strong">${escapeHtml(m.individual_name)}</div>
+      <div class="text-xs ga-text">${escapeHtml(date)} · ${escapeHtml(m.scheduled_shift_name)} shift</div>
     </div>
     <span class="shrink-0 inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-medium text-red-700">Missing note</span>
   </li>`;
     })
     .join('');
 
-  return `<h2 class="mt-8 text-lg font-medium text-gray-900">Missing notes</h2>
-  <p class="mt-1 text-sm text-gray-600">${missing.length} shift${missing.length === 1 ? '' : 's'} with no submitted documentation in this period.</p>
+  return `<h2 class="mt-8 text-lg font-medium ga-text-strong">Missing notes</h2>
+  <p class="mt-1 text-sm ga-text">${missing.length} shift${missing.length === 1 ? '' : 's'} with no submitted documentation in this period.</p>
   <ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">${items}</ul>`;
 }
 
@@ -104,7 +104,7 @@ export function renderAngelView(data: AngelViewData): string {
 
   const listHtml =
     data.individuals.length === 0
-      ? `<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">This angel hasn't written any notes in this period.</p>`
+      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">This angel hasn't written any notes in this period.</p>`
       : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
 ${data.individuals
   .map((i) => {
@@ -113,9 +113,9 @@ ${data.individuals
   <a href="/location/${encodeURIComponent(data.location.id)}/angel/${encodeURIComponent(data.angel.id)}/individual/${encodeURIComponent(i.individual_id)}" class="flex items-center justify-between px-5 py-4 gap-3 hover:bg-gray-50 focus:outline-none focus:bg-gray-50 min-h-[44px]">
     <div class="flex items-center gap-3 min-w-0">
       ${rollupPill(i.red_content, i.yellow_count, i.missing_count)}
-      <span class="text-sm font-medium text-gray-900 truncate">${escapeHtml(i.individual_name)}</span>
+      <span class="text-sm font-medium ga-text-strong truncate">${escapeHtml(i.individual_name)}</span>
     </div>
-    <span class="text-sm text-gray-600 tnum shrink-0">${escapeHtml(counts)}</span>
+    <span class="text-sm ga-text tnum shrink-0">${escapeHtml(counts)}</span>
   </a>
 </li>`;
   })
@@ -125,10 +125,10 @@ ${data.individuals
   return `<section>
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">${escapeHtml(data.angel.name)}</h1>
-    <p class="mt-1 text-sm text-gray-600">${escapeHtml(data.angel.role)} · ${escapeHtml(data.location.name)} · ${escapeHtml(data.window.label)}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">${escapeHtml(data.angel.name)}</h1>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(data.angel.role)} · ${escapeHtml(data.location.name)} · ${escapeHtml(data.window.label)}</p>
   </div>
-  <h2 class="mt-6 text-lg font-medium text-gray-900">Individuals this angel wrote for</h2>
+  <h2 class="mt-6 text-lg font-medium ga-text-strong">Individuals this angel wrote for</h2>
   ${listHtml}
   ${contextualHelp('angel')}
 </section>`;
@@ -152,7 +152,7 @@ export function renderIndividualView(data: IndividualViewData): string {
 
   const listHtml =
     data.flags.length === 0
-      ? `<p class="mt-3 text-sm text-gray-500 bg-white border border-gray-200 rounded-md p-5">No flagged notes in this period. Everything looks clean.</p>`
+      ? `<p class="mt-3 text-sm ga-text-muted bg-white border border-gray-200 rounded-md p-5">No flagged notes in this period. Everything looks clean.</p>`
       : `<ul class="mt-3 bg-white border border-gray-200 rounded-md divide-y divide-gray-200">
 ${data.flags
   .map((f) => {
@@ -171,10 +171,10 @@ ${data.flags
   <a href="${link}" class="block px-5 py-4 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
     <div class="flex items-center gap-3 flex-wrap">
       ${pill}
-      <span class="text-xs font-medium text-gray-700">${escapeHtml(categoryLabel)}</span>
-      <span class="text-xs text-gray-500">${escapeHtml(date)}${shift ? ' · ' + escapeHtml(shift) : ''}</span>
+      <span class="text-xs font-medium ga-text">${escapeHtml(categoryLabel)}</span>
+      <span class="text-xs ga-text-muted">${escapeHtml(date)}${shift ? ' · ' + escapeHtml(shift) : ''}</span>
     </div>
-    <p class="mt-2 text-sm text-gray-900">${escapeHtml(f.reason)}</p>
+    <p class="mt-2 text-sm ga-text-strong">${escapeHtml(f.reason)}</p>
   </a>
 </li>`;
   })
@@ -184,10 +184,10 @@ ${data.flags
   return `<section>
   ${crumb}
   <div class="mt-2">
-    <h1 class="text-2xl font-semibold text-gray-900">${escapeHtml(data.individual.name)}</h1>
-    <p class="mt-1 text-sm text-gray-600">${escapeHtml(data.location.name)} · notes by ${escapeHtml(data.angel.name)} · ${escapeHtml(data.window.label)}</p>
+    <h1 class="text-2xl font-semibold ga-text-strong">${escapeHtml(data.individual.name)}</h1>
+    <p class="mt-1 text-sm ga-text">${escapeHtml(data.location.name)} · notes by ${escapeHtml(data.angel.name)} · ${escapeHtml(data.window.label)}</p>
   </div>
-  <h2 class="mt-6 text-lg font-medium text-gray-900">Flagged notes</h2>
+  <h2 class="mt-6 text-lg font-medium ga-text-strong">Flagged notes</h2>
   ${listHtml}
   ${contextualHelp('individual')}
 </section>`;

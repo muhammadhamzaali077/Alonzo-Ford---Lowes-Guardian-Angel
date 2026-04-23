@@ -1176,7 +1176,7 @@ app.get('/search', (c) => {
     layout({
       title: `Search · Guardian Angel`,
       body: `<section>
-        <h1 class="text-2xl font-semibold text-gray-900">Search</h1>
+        <h1 class="text-2xl font-semibold ga-text-strong">Search</h1>
         <form method="get" action="/search" class="mt-4">
           <input name="q" value="${q.replace(/"/g, '&quot;')}"
                  placeholder="Search notes…"
@@ -1214,8 +1214,8 @@ function renderNotFoundPage(scope: RequestScope, message: string): string {
   return layout({
     title: 'Not found · Guardian Angel',
     body: `<section class="text-center py-12">
-      <h1 class="text-2xl font-semibold text-gray-900">Not found</h1>
-      <p class="mt-2 text-sm text-gray-600">${message}</p>
+      <h1 class="text-2xl font-semibold ga-text-strong">Not found</h1>
+      <p class="mt-2 text-sm ga-text">${message}</p>
       <a href="/" class="mt-4 inline-block text-sm text-blue-600 hover:underline">Back to dashboard</a>
     </section>`,
     user: { name: scope.user.name, role: scope.user.role },
@@ -1227,8 +1227,8 @@ function renderForbiddenPage(scope: RequestScope): string {
   return layout({
     title: 'Access denied · Guardian Angel',
     body: `<section class="text-center py-12">
-      <h1 class="text-2xl font-semibold text-gray-900">Access denied</h1>
-      <p class="mt-2 text-sm text-gray-600">You don't have access to this page. If you think this is a mistake, ask your admin.</p>
+      <h1 class="text-2xl font-semibold ga-text-strong">Access denied</h1>
+      <p class="mt-2 text-sm ga-text">You don't have access to this page. If you think this is a mistake, ask your admin.</p>
       <a href="/" class="mt-4 inline-block text-sm text-blue-600 hover:underline">Back to dashboard</a>
     </section>`,
     user: { name: scope.user.name, role: scope.user.role },
@@ -1281,9 +1281,9 @@ app.onError((err, c) => {
     layout({
       title: 'Something went wrong · Guardian Angel',
       body: `<section class="py-12 text-center">
-        <h1 class="text-2xl font-semibold text-gray-900">Something went wrong</h1>
-        <p class="mt-2 text-sm text-gray-600">Reload the page and try again. If it keeps happening, send this code to support:</p>
-        <p class="mt-2 font-mono tnum text-sm text-gray-900">${correlationId}</p>
+        <h1 class="text-2xl font-semibold ga-text-strong">Something went wrong</h1>
+        <p class="mt-2 text-sm ga-text">Reload the page and try again. If it keeps happening, send this code to support:</p>
+        <p class="mt-2 font-mono tnum text-sm ga-text-strong">${correlationId}</p>
         <a href="/" class="mt-6 inline-block text-sm text-blue-600 hover:underline">Back to dashboard</a>
       </section>`,
       user: scope ? { name: scope.user.name, role: scope.user.role } : undefined,

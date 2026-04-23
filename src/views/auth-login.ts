@@ -24,7 +24,7 @@ export interface AuthLoginViewOptions {
 export function renderLoginPage(opts: AuthLoginViewOptions): string {
   const errorBanner = opts.error ? renderError(opts.error) : '';
   const googleButton = opts.googleEnabled
-    ? `<a href="/auth/google/start" class="mt-3 inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
+    ? `<a href="/auth/google/start" class="mt-3 inline-flex items-center justify-center w-full min-h-[44px] px-4 rounded-md border border-gray-300 bg-white text-sm font-medium ga-text-strong hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2">
       Sign in with Google
     </a>`
     : '';
@@ -50,16 +50,16 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
   <title>Sign in · Guardian Angel</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-[#fafafa] text-gray-900 antialiased flex items-center justify-center p-4">
+<body class="min-h-screen ga-bg ga-text antialiased flex items-center justify-center p-4">
   <main class="w-full max-w-sm">
     <div class="bg-white border border-gray-200 rounded-md p-6">
-      <h1 class="text-xl font-semibold text-gray-900 text-center">Guardian Angel</h1>
+      <h1 class="text-xl font-semibold ga-text-strong text-center">Guardian Angel</h1>
 
       ${errorBanner}
 
       <form method="post" action="/auth/login/demo" class="mt-6 space-y-4">
         <div>
-          <label for="login-email" class="block text-sm font-medium text-gray-900">Email</label>
+          <label for="login-email" class="block text-sm font-medium ga-text-strong">Email</label>
           <input id="login-email" name="email" type="email" required autocomplete="username"
                  value="${escapeHtml(opts.prefillEmail)}" list="demo-users"
                  class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
@@ -68,7 +68,7 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
           </datalist>
         </div>
         <div>
-          <label for="login-password" class="block text-sm font-medium text-gray-900">Password</label>
+          <label for="login-password" class="block text-sm font-medium ga-text-strong">Password</label>
           <input id="login-password" name="password" type="password" required autocomplete="current-password"
                  value="${escapeHtml(opts.prefillPassword)}"
                  class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
@@ -80,7 +80,7 @@ export function renderLoginPage(opts: AuthLoginViewOptions): string {
 
       ${googleButton}
     </div>
-    ${config.PROTOTYPE_MODE ? `<p class="mt-3 text-center text-xs text-gray-500">Prototype mode. Try demo@, alonzo@, vivian@, marcus@, anthony@, or elena@ lowesguardianangel.com.</p>` : ''}
+    ${config.PROTOTYPE_MODE ? `<p class="mt-3 text-center text-xs ga-text-muted">Prototype mode. Try demo@, alonzo@, vivian@, marcus@, anthony@, or elena@ lowesguardianangel.com.</p>` : ''}
   </main>
 </body>
 </html>`;

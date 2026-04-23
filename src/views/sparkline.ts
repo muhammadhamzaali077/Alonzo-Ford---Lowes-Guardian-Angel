@@ -26,7 +26,7 @@ export function renderSparkline(points: SparklinePoint[], opts: RenderSparklineO
   if (points.length === 0) {
     // No data line — a centered dashed rule keeps the row's vertical rhythm.
     return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="No trend data yet" class="inline-block align-middle">
-      <line x1="2" y1="${h / 2}" x2="${w - 2}" y2="${h / 2}" stroke="#d1d5db" stroke-width="1" stroke-dasharray="2 2" />
+      <line x1="2" y1="${h / 2}" x2="${w - 2}" y2="${h / 2}" style="stroke: var(--ga-border-strong)" stroke-width="1" stroke-dasharray="2 2" />
     </svg>`;
   }
 
@@ -43,9 +43,9 @@ export function renderSparkline(points: SparklinePoint[], opts: RenderSparklineO
   if (points.length === 1) {
     const cx = pad + innerW / 2;
     const cy = yFor(points[0]!.pct);
-    const color = strokeColor(points[0]!.pct);
+    const colorVar = severityVar(points[0]!.pct);
     return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${escapeAttr(label)} — single data point" class="inline-block align-middle">
-      <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="2" fill="${color}" />
+      <circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="2" style="fill: var(${colorVar})" />
     </svg>`;
   }
 
@@ -54,17 +54,18 @@ export function renderSparkline(points: SparklinePoint[], opts: RenderSparklineO
 
   // Color based on the LATEST point: green ≥ 95, amber ≥ 85, red otherwise.
   const last = points[points.length - 1]!.pct;
-  const color = strokeColor(last);
+  const colorVar = severityVar(last);
 
   return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${escapeAttr(label)}" class="inline-block align-middle">
-    <polyline fill="none" stroke="${color}" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" points="${coords.join(' ')}" />
+    <polyline fill="none" style="stroke: var(${colorVar})" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" points="${coords.join(' ')}" />
   </svg>`;
 }
 
-function strokeColor(pct: number): string {
-  if (pct >= 95) return '#16a34a'; // green-600
-  if (pct >= 85) return '#f59e0b'; // amber-500
-  return '#dc2626';                // red-600
+/** Pick the design-token CSS custom-property that matches a compliance-%. */
+function severityVar(pct: number): string {
+  if (pct >= 95) return '--ga-green';
+  if (pct >= 85) return '--ga-amber';
+  return '--ga-red';
 }
 
 function escapeAttr(s: string): string {
