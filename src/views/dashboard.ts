@@ -112,18 +112,18 @@ function renderChipBar(filters: DashboardViewData['filters'], windowPreset: stri
 }
 
 function renderWelcomePanel(): string {
-  return `<aside id="welcome-panel" class="mb-4 bg-white border border-blue-200 rounded-md p-4 sm:p-5">
+  return `<aside id="welcome-panel" class="ga-panel-welcome mb-6 p-5 sm:p-6">
   <div class="flex items-start justify-between gap-3">
     <div class="min-w-0">
-      <h2 class="text-base font-semibold ga-text-strong">Welcome to Guardian Angel</h2>
-      <p class="mt-1 text-sm ga-text">This is the compliance dashboard for Lowe's Guardian Angel. Red, yellow, and green flags cover missing shift notes and content that falls outside your rules. Everything on this screen is synthetic demo data — click any location to drill down, or open <a href="/rules" class="text-blue-600 hover:underline">Rules</a> to tune how flags are generated.</p>
+      <h2 class="ga-h2">Welcome to Guardian Angel</h2>
+      <p class="mt-2 ga-body">This is the compliance dashboard for Lowe's Guardian Angel. Red, yellow, and green flags cover missing shift notes and content that falls outside your rules. Everything on this screen is synthetic demo data — click any location to drill down, or open <a href="/rules" class="ga-link">Rules</a> to tune how flags are generated.</p>
     </div>
     <button type="button"
             hx-post="/ui/welcome/dismiss"
             hx-target="#welcome-panel"
             hx-swap="outerHTML"
             aria-label="Dismiss welcome message"
-            class="shrink-0 inline-flex items-center justify-center min-h-[32px] min-w-[32px] -mt-1 -mr-1 p-1 rounded-md ga-text-muted hover:bg-gray-100 hover:ga-text focus:outline-none focus:ring-2 focus:ring-blue-600">
+            class="ga-icon-btn ga-transition shrink-0 -mt-1 -mr-1 ga-focus">
       <svg class="w-4 h-4" fill="none" viewBox="0 0 20 20" stroke="currentColor" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5l10 10M15 5L5 15"/>
       </svg>
@@ -137,10 +137,10 @@ function renderTitleRow(data: DashboardViewData): string {
   const scopeLabel = 'All locations'; // Phase 11 will swap to user.role-aware label
   return `<div class="flex items-start justify-between gap-4 flex-wrap">
   <div>
-    <h1 class="text-2xl font-semibold ga-text-strong">Dashboard</h1>
-    <p class="mt-1 text-sm ga-text">${escapeHtml(data.window.label)} · ${scopeLabel}</p>
+    <h1 class="ga-h1">Dashboard</h1>
+    <p class="mt-1 ga-caption">${escapeHtml(data.window.label)} · ${scopeLabel}</p>
   </div>
-  <a href="/digest/preview" class="inline-flex items-center justify-center min-h-[44px] px-3 rounded-md border border-gray-300 bg-white text-sm ga-text-strong hover:bg-gray-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600">
+  <a href="/digest/preview" class="inline-flex items-center justify-center min-h-[44px] px-4 rounded-md border ga-surface text-sm font-medium ga-text ga-transition ga-focus hover:ga-shadow-sm" style="border-color: var(--ga-border-strong);">
     Preview this week's email
   </a>
 </div>`;
@@ -201,16 +201,22 @@ function renderSeverityChip(value: string, label: string, selected: string | und
 }
 
 function renderTiles(o: OverallCountsWithPrior): string {
+  // Accent — 2px left border in the metric's severity color (no icons, per
+  // UI/UX constraints). Each tile carries a `tone` that picks the accent
+  // token; compliance uses `green` as its positive-metric marker.
   return `<div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-  ${tile({ label: 'Red',        current: o.red,            prior: o.prior.red,        higherIsWorse: true })}
-  ${tile({ label: 'Yellow',     current: o.yellow,         prior: o.prior.yellow,     higherIsWorse: true })}
-  ${tile({ label: 'Missing',    current: o.missing,        prior: o.prior.missing,    higherIsWorse: true })}
-  ${tile({ label: 'Compliance', current: o.compliance_pct, prior: o.prior.compliance_pct, higherIsWorse: false, unit: '%', decimals: 1, complianceArrow: true })}
+  ${tile({ label: 'Red',        tone: 'red',    current: o.red,            prior: o.prior.red,            higherIsWorse: true })}
+  ${tile({ label: 'Yellow',     tone: 'amber',  current: o.yellow,         prior: o.prior.yellow,         higherIsWorse: true })}
+  ${tile({ label: 'Missing',    tone: 'red',    current: o.missing,        prior: o.prior.missing,        higherIsWorse: true })}
+  ${tile({ label: 'Compliance', tone: 'green',  current: o.compliance_pct, prior: o.prior.compliance_pct, higherIsWorse: false, unit: '%', decimals: 1, complianceArrow: true })}
 </div>`;
 }
 
+type TileTone = 'red' | 'amber' | 'green';
+
 interface TileProps {
   label: string;
+  tone: TileTone;
   current: number;
   prior: number;
   /** Flags go up = bad; compliance goes up = good. Colors the delta accordingly. */
@@ -231,18 +237,24 @@ function tile(p: TileProps): string {
   const deltaHtml = renderDelta(p);
   const arrow = p.complianceArrow ? renderComplianceArrow(p.current - p.prior) : '';
 
-  return `<div class="bg-white border border-gray-200 rounded-md p-5">
-  <div class="flex items-baseline gap-2">
-    <div class="text-3xl font-semibold tnum ga-text-strong"
-         data-count-to="${escapeHtml(countTo)}"
-         data-count-unit="${escapeHtml(unit)}"
-         data-count-decimals="${decimals}"
-         aria-label="${escapeHtml(p.label)}: ${escapeHtml(displayFinal + unit)}">${escapeHtml(displayFinal + unit)}</div>
-    ${arrow}
-  </div>
-  <div class="mt-1 flex items-baseline justify-between gap-2">
-    <div class="text-sm ga-text">${escapeHtml(p.label)}</div>
-    ${deltaHtml}
+  // Left accent: 2px border-left in the metric's severity color. Achieved via
+  // an inline style pulling from --ga-red / --ga-amber / --ga-green so the
+  // tile picks up any future token re-tune for free.
+  const accentVar = p.tone === 'red' ? '--ga-red' : p.tone === 'amber' ? '--ga-amber' : '--ga-green';
+  const accentStyle = `border-left: 2px solid var(${accentVar});`;
+
+  return `<div class="ga-tile ga-surface rounded-md ga-shadow-sm ga-transition" style="${accentStyle}">
+  <div class="p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-3">
+      <div class="ga-display"
+           data-count-to="${escapeHtml(countTo)}"
+           data-count-unit="${escapeHtml(unit)}"
+           data-count-decimals="${decimals}"
+           aria-label="${escapeHtml(p.label)}: ${escapeHtml(displayFinal + unit)}">${escapeHtml(displayFinal + unit)}</div>
+      ${arrow}
+    </div>
+    <div class="mt-2 ga-caption">${escapeHtml(p.label)}</div>
+    <div class="mt-1">${deltaHtml}</div>
   </div>
 </div>`;
 }

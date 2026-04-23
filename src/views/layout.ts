@@ -192,6 +192,46 @@ export function layout({ title, body, dataCurrentAs, user, activeNav = null }: L
       transition-timing-function: var(--ga-ease);
     }
 
+    /* ------------------------------------------------------------------------
+     * Component-level utilities. These are compositions of the primitives
+     * above and live here so every tile / card / row reads the same.
+     * ---------------------------------------------------------------------- */
+
+    /* Hero tile — numeric metric card with an accent-colored left border,
+       resting shadow and a subtle lift on hover. The accent color is set
+       inline in the view (border-left) so each tile can vary. */
+    .ga-tile {
+      border: 1px solid var(--ga-border);
+      /* The left border is re-declared by inline style on the tile element
+         itself to install the 2px severity accent — must win the cascade. */
+    }
+    .ga-tile:hover { box-shadow: var(--ga-shadow-md); transform: translateY(-1px); }
+
+    /* Welcome-style callout panel — used for the dashboard welcome card and
+       any future calm-tone hint. Brand-blue vertical accent on the left. */
+    .ga-panel-welcome {
+      position: relative;
+      background-color: var(--ga-surface);
+      border: 1px solid var(--ga-blue-border);
+      border-left: 3px solid var(--ga-blue);
+      border-radius: 6px;
+    }
+
+    /* Round icon-button (header chrome, dismiss X, toolbar buttons). 32×32
+       minimum hit target; darkens bg on hover via a subtle neutral shade. */
+    .ga-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 32px;
+      min-width: 32px;
+      border-radius: 9999px;
+      color: var(--ga-text-muted);
+      background-color: transparent;
+    }
+    .ga-icon-btn:hover { background-color: #f1f5f9; color: var(--ga-text); }
+    .ga-icon-btn:focus-visible { outline: 2px solid transparent; box-shadow: var(--ga-focus); }
+
     /* Focus ring — keyboard-only; respects :focus-visible */
     .ga-focus:focus-visible { outline: 2px solid transparent; box-shadow: var(--ga-focus); }
 
@@ -422,10 +462,10 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
       : 'ga-text hover:text-blue-600';
     return `<a href="${href}" class="${cls}">${label}</a>`;
   };
-  return `  <header class="bg-white border-b border-gray-200">
+  return `  <header class="ga-surface" style="border-bottom: 1px solid var(--ga-border);">
     <div class="mx-auto max-w-7xl px-4 sm:px-6">
-      <div class="flex items-center justify-between h-14">
-        <a href="/" class="text-lg font-medium ga-text-strong hover:text-blue-600">Guardian Angel</a>
+      <div class="flex items-center justify-between h-16">
+        <a href="/" class="text-[1.0625rem] font-semibold ga-text-strong hover:text-[color:var(--ga-blue-strong)] ga-transition" style="letter-spacing: -0.01em;">Guardian Angel</a>
         <nav class="hidden md:flex items-center gap-6 text-sm" aria-label="Primary">
           ${navLink('/', 'Dashboard', 'dashboard')}
           ${showRules ? navLink('/rules', 'Rules', 'rules') : ''}
@@ -464,15 +504,19 @@ function renderHeader({ user, activeNav }: { user: LayoutUser; activeNav: NavKey
 }
 
 function renderDataBar(dataCurrentAs: string): string {
+  // Meta-information band beneath the primary nav. Kept small + muted so
+  // nothing in it competes with the nav or the page title below it.
+  // The Demo-data pill uses filled dot (--ga-amber), not an outline ring —
+  // easier to spot at a glance that this is synthetic data.
   const badge = config.PROTOTYPE_MODE
-    ? `      <span class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900" title="Synthetic data — no real individuals">
-        <span class="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+    ? `      <span class="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ga-sev-amber" title="Synthetic data — no real individuals">
+        <span class="h-2 w-2 rounded-full ga-sev-amber-dot" aria-hidden="true"></span>
         Demo data
-        <span class="hidden sm:inline text-amber-800 font-normal">· synthetic, no real individuals</span>
+        <span class="hidden sm:inline font-normal" style="color: var(--ga-amber-strong); opacity: 0.85;">· synthetic, no real individuals</span>
       </span>`
     : '';
-  return `  <div class="bg-white border-b border-gray-200">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-2 text-sm ga-text-muted flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+  return `  <div class="ga-surface" style="border-bottom: 1px solid var(--ga-border);">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-1.5 text-[11px] ga-text-muted flex flex-wrap items-center justify-between gap-x-4 gap-y-1" style="letter-spacing: 0.01em;">
       <span>Data current as of ${escapeHtml(dataCurrentAs)}</span>
 ${badge}
     </div>
